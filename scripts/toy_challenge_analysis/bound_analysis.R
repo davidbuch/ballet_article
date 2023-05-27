@@ -21,7 +21,7 @@ color_vals_ts <- c(gg_color_hue(10),
 
 
 # Load Data and Set Parameters
-x <- readRDS("data/clean_data/tsne.rds")
+x <- scale(as.matrix(readRDS("data/clean_data/tsne.rds")))
 nobs <- nrow(x)
 nsims <- 1000
 burn <- floor(nsims / 2)
