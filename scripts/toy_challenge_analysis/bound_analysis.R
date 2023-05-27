@@ -2,10 +2,13 @@ library(ggplot2)
 library(grid)
 library(gridExtra)
 library(dirichletprocess)
+source("R/dirichletprocess_custom_init.R")
 source("R/rearrange_labels.R")
 Rcpp::sourceCpp("src/subpartiton_min_max.cpp")
 dir.create('output/toy_challenge', recursive = TRUE, showWarnings = FALSE)
+set.seed(1234)
 
+# Helper functions
 gg_color_hue <- function(n) {
   hues = seq(15, 375, length = n + 1)
   hcl(h = hues, l = 65, c = 100)[1:n]
@@ -15,14 +18,26 @@ nunique <- function(lbs){
 }
 color_vals_ts <- c(gg_color_hue(10), 
                    rep(RColorBrewer::brewer.pal(4, 'Greens'), 1000))
-dp_mod <- readRDS("../bad_clustering_article/fitted_models/toy_data/tsne_dpmm_c1.rds")
+
 
 # Load Data and Set Parameters
-x <- dp_mod$data
+x <- readRDS("data/clean_data/tsne.rds")
 nobs <- nrow(x)
-nsims <- length(dp_mod$alphaChain)
+nsims <- 1000
 burn <- floor(nsims / 2)
 alpha <- 0.05
+
+# Fit the DPMM  Model
+g0Priors <- list(mu0 = rep(0,ncol(x)),
+                 Lambda = diag(ncol(x)),
+                 kappa0 = 0.1, #0.01,
+                 nu = 10) # 200
+dp_mod <- DirichletProcessMvnormal(x, 
+                                   numInitialClusters = 20,
+                                   g0Priors = g0Priors,
+                                   alphaPriors = c(1,0.01))
+dp_mod <- custom_init(dp_mod)
+dp_mod <- Fit(dp_mod, nsims)
 
 # extract mcmc samples of f
 mixture_clustering_samps <- matrix(nrow = nsims, ncol = nobs)
