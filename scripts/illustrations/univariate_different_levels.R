@@ -1,0 +1,15 @@
+dir.create('output/illustrations', recursive = TRUE, showWarnings = FALSE)
+set.seed(1234)
+N <- 1000
+sel <- sample(1:4, N, TRUE, prob = c(0.15,0.15,0.3,0.3))
+x <- rnorm(N, c(-3,0,5,8.4)[sel], c(1,1,0.6,0.75)[sel])
+kdex <- density(x)
+png("output/illustrations/univariate_different_levels.png", 
+    width = 8, height = 8, units = 'in', res = 300)
+#par(cex.axis = 2)
+hist(x, freq = FALSE, xlab = NA, ylab = NA, main = NA, breaks = -10:12)
+mtext("Density", side=2, line=2.2, cex=1.5)
+lines(kdex, lwd = 3)
+abline(h = 0.03, col = "green", lwd = 2)
+abline(h = 0.09, col = "red", lwd = 2)
+dev.off()

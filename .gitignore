@@ -1,0 +1,9 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+*.rds
+*.DS_Store
+output/
+data/clean_data/
+data/intermediate_data/
