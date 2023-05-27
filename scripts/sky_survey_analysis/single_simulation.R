@@ -1,4 +1,5 @@
 library(tidyverse)
+library(dbscan)
 source("R/random_histogram_model.R")
 source("R/density_clusterer.R")
 source("R/ne_parts_pair_counting.R")
@@ -194,7 +195,6 @@ saveRDS(test_results, filename)
 
 
 ## DBSCAN
-library(dbscan)
 row_samps <- sample(1:nobs, 1000)
 
 dbscan_metrics <- data.frame()
