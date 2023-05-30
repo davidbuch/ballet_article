@@ -7,7 +7,7 @@ source("R/salso_custom.R")
 source("R/credible_bounds.R")
 source("R/simstudy_accuracy_measures.R")
 
-random_seed <- as.integer(Sys.getenv(SLURM_ARRAY_TASK_ID))
+random_seed <- as.integer(Sys.getenv('SLURM_ARRAY_TASK_ID'))
 set.seed(random_seed)
 
 # ----------------------------------------
