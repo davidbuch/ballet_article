@@ -6,7 +6,7 @@ source("R/dirichletprocess_custom_init.R")
 source("R/rearrange_labels.R")
 Rcpp::sourceCpp("src/subpartiton_min_max.cpp")
 dir.create('output/toy_challenge', recursive = TRUE, showWarnings = FALSE)
-set.seed(1234)
+set.seed(12345)
 
 # Helper functions
 gg_color_hue <- function(n) {
@@ -24,7 +24,6 @@ color_vals_ts <- c(gg_color_hue(10),
 x <- scale(as.matrix(readRDS("data/clean_data/tsne.rds")))
 nobs <- nrow(x)
 nsims <- 1000
-burn <- floor(nsims / 2)
 alpha <- 0.05
 
 # Fit the DPMM  Model
@@ -44,36 +43,21 @@ mixture_clustering_samps <- matrix(nrow = nsims, ncol = nobs)
 for(s in 1:nsims)
   mixture_clustering_samps[s,] <- dp_mod$labelsChain[[s]]
 
-# drop the burn-in samples
-# mixture_clustering_samps <- mixture_clustering_samps[(burn + 1):nsims,]
-
-# Find the Clustering Point Estimate (Binder's Loss 1,1)
-# mixture_pe <- salso::salso(mixture_clustering_samps, 
-#                            maxNClusters = 100,
-#                            maxZealousAttempts = 100, 
-#                            loss = "binder")
-mixture_pe <- salso::salso(mixture_clustering_samps, 
-                           maxNClusters = 100,
-                           maxZealousAttempts = 100, 
-                           loss = "VI")
-ggplot() + 
-  geom_point(aes(x = x[,1], y = x[,2], color = factor(mixture_pe)), size = 0.1) + 
-  guides(color = 'none') + scale_color_manual(values = color_vals_ts) +
-  labs(title = sprintf("Point Estimate (%d)", nunique(mixture_pe)))
-
-
-
+# Find the Clustering Point Estimate (VI Loss 1,1)
+mixture_pe <- salso::salso(mixture_clustering_samps,
+                           loss = salso::VI(),
+                           maxNClusters = 1000,
+                           maxZealousAttempts = 1000)
+nunique(mixture_pe)
+table(apply(mixture_clustering_samps, 1, nunique))
 
 # Precompute relevant quantities for point estimation and uncertainty bounds
 psm <- mcclust::comp.psm(mixture_clustering_samps)
-sample_losses <- apply(mixture_clustering_samps, 1, \(cs) salso::VI(mixture_pe, cs))
-# sample_losses <- mcclust::binder(mixture_clustering_samps, psm)
+sample_losses <- apply(mixture_clustering_samps, 1, 
+                       \(cs) salso::VI(mixture_pe, cs))
 eps_star <- quantile(sample_losses, 1 - alpha)
 
 # Method 1 - Wade and Gharamani Extreme Samples from Credible Ball
-# wg_bounds <- mcclust.ext::credibleball(mixture_pe, 
-#                                        mixture_clustering_samps, 
-#                                        c.dist = 'Binder')
 wg_bounds <- mcclust.ext::credibleball(mixture_pe, 
                                        mixture_clustering_samps, 
                                        c.dist = 'VI')
@@ -98,12 +82,15 @@ for(pv in 1:nrow(mixture_pes)){
                                    maxZealousAttempts = 1000)))
 }
 pe_losses <- apply(mixture_pes, 1, \(cs) salso::VI(mixture_pe, cs))
-# pe_losses <- mcclust::binder(mixture_pes, psm)
+
+png("output/toy_challenge/bound_analysis_greedy_distance.png", 
+    width = 15, height = 20, units = 'in', res = 300)
 plot(bp_grid - 1, pe_losses,
      ylim = c(max(0, min(pe_losses)), max(pe_losses, eps_star)),
      type = 'l', xlab = 'Bias Parameter', ylab = 'VI(1,1)', 
      main = 'Distance of Biased Partition\n from Point Estimate Partition')
 abline(h = eps_star, col = 'red')
+dev.off()
 
 greedy_lb <- mixture_pes[min(which(pe_losses < eps_star)) - 1,]
 greedy_ub <- mixture_pes[max(which(pe_losses < eps_star)) + 1,]
