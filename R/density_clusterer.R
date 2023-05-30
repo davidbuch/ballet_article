@@ -46,6 +46,9 @@ density_based_clusterer <- function(x,
   }
   close(pb)
   
+  attr(labels, 'lambda') <- lambda
+  attr(labels, 'delta') <- delta
+  
   labels
 }
 

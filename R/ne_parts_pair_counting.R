@@ -1,3 +1,5 @@
+Rcpp::sourceCpp("src/ne_loss.cpp")
+
 compute_pst <- function(clustering_samps, 
                         color_map = function(x) ifelse(x == 0, 0, 1),
                         color_set = unique(color_map(0:ncol(clustering_samps)))){
@@ -50,35 +52,60 @@ compute_pdt <- function(clustering_samps,
   return(pdt)
 }
 
+# ne_loss <- function(proposed_partition, 
+#                  target_partition,
+#                  color_map = function(x) ifelse(x == 0, 0, 1),
+#                  color_set = unique(
+#                    color_map(0:ncol(clustering_samps))
+#                  ),
+#                  sep_loss = 1, 
+#                  join_loss = 1, 
+#                  miscolor_loss = 1/4){
+#   stopifnot(length(proposed_partition) == length(target_partition))
+#   
+#   g <- proposed_partition # cluster allocation vector `g`
+#   gt <- target_partition
+#   q <- color_map(g) # coloring vector `q`
+#   qt <- color_map(gt)
+#   
+#   n <- length(g) # number of items to partition
+#   
+#   loss <- 0
+#   for(i in 1:(n - 1)){
+#     for(j in (i + 1):n){
+#       use_binder <- (q[i] == qt[i]) && (q[j] == qt[j])
+#       loss <- loss + 
+#         miscolor_loss*((q[i] != qt[i]) + (q[j] != qt[j])) + 
+#         sep_loss*(g[i] != g[j])*(gt[i] == gt[j])*use_binder + 
+#         join_loss*(g[i] == g[j])*(gt[i] != gt[j])*use_binder
+#     }
+#   }
+#   return(loss)
+# }
+
 ne_loss <- function(proposed_partition, 
-                 target_partition,
-                 color_map = function(x) ifelse(x == 0, 0, 1),
-                 color_set = unique(
-                   color_map(0:ncol(clustering_samps))
-                 ),
-                 sep_loss = 1, 
-                 join_loss = 1, 
-                 miscolor_loss = 1/4){
+                        target_partition,
+                        color_map = function(x) ifelse(x == 0, 0, 1),
+                        color_set = unique(
+                          color_map(0:ncol(clustering_samps))
+                        ),
+                        sep_loss = 1, 
+                        join_loss = 1, 
+                        miscolor_loss = 1/4){
   stopifnot(length(proposed_partition) == length(target_partition))
   
-  g <- proposed_partition # cluster allocation vector `g`
-  gt <- target_partition
-  q <- color_map(g) # coloring vector `q`
-  qt <- color_map(gt)
-  
-  n <- length(g) # number of items to partition
-  
-  loss <- 0
-  for(i in 1:(n - 1)){
-    for(j in (i + 1):n){
-      use_binder <- (q[i] == qt[i]) && (q[j] == qt[j])
-      loss <- loss + 
-        miscolor_loss*((q[i] != qt[i]) + (q[j] != qt[j])) + 
-        sep_loss*(g[i] != g[j])*(gt[i] == gt[j])*use_binder + 
-        join_loss*(g[i] == g[j])*(gt[i] != gt[j])*use_binder
-    }
-  }
-  return(loss)
+  qprop <- color_map(proposed_partition) # coloring vector `q`
+  qtarg <- color_map(target_partition)
+
+  color_matched_indices <- which((qprop == qtarg) & qprop & qtarg)
+  ne_loss_cpp(ghat = proposed_partition,
+              g = target_partition, 
+              qhat = qprop, 
+              q = qtarg, 
+              colormatch_indices = color_matched_indices, 
+              sep_loss = sep_loss,
+              join_loss = join_loss,
+              miscolor_loss = miscolor_loss)
 }
 
 expected_loss <- function(proposed_partition,

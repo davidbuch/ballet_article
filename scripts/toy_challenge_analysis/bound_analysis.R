@@ -38,7 +38,7 @@ dp_mod <- DirichletProcessMvnormal(x,
 dp_mod <- custom_init(dp_mod)
 dp_mod <- Fit(dp_mod, nsims)
 
-# extract mcmc samples of f
+# extract mcmc samples of clusters
 mixture_clustering_samps <- matrix(nrow = nsims, ncol = nobs)
 for(s in 1:nsims)
   mixture_clustering_samps[s,] <- dp_mod$labelsChain[[s]]
