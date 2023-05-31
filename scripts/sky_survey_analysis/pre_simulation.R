@@ -98,7 +98,7 @@ for(s in 1:nsamps){
   }, error = function(e){s <- s - 1})
   setTxtProgressBar(pb, s/nsamps)
 }
-pb.close()
+close(pb)
 plot_grid$f_pe <- plot_grid$f_pe / nsamps
 
 plot_grid$f_true <- R
