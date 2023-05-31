@@ -6,33 +6,36 @@ source("R/density_clusterer.R")
 source("R/salso_custom.R")
 source("R/ne_parts_pair_counting.R")
 source("R/rearrange_labels.R")
+source('R/credible_bounds.R')
 
 # Unrelated to the eventual def. of quantile bounds, but choice can improve or 
 # deteriorate the clarity of the bounds' properties.
 DENSITY_THRESHOLD_QUANTILE <- 0.125
 SPLIT_ERR_PROB <- 0.01
-
-# dp_mod <- readRDS("../bad_clustering_article/fitted_models/toy_data/tsne_dpmm_c1.rds")
-# x <- dp_mod$data
-# nsims <- length(dp_mod$alphaChain)
-
-# Load Data and Set Parameters
-x <- scale(as.matrix(readRDS("data/clean_data/tsne.rds")))
-nobs <- nrow(x)
-nsims <- 1000
 alpha <- 0.05
 
-# Fit the DPMM  Model
-g0Priors <- list(mu0 = rep(0,ncol(x)),
-                 Lambda = diag(ncol(x)),
-                 kappa0 = 0.1, #0.01,
-                 nu = 10) # 200
-dp_mod <- DirichletProcessMvnormal(x, 
-                                   numInitialClusters = 20,
-                                   g0Priors = g0Priors,
-                                   alphaPriors = c(1,0.01))
-dp_mod <- custom_init(dp_mod)
-dp_mod <- Fit(dp_mod, nsims)
+
+# Load Data and Set Parameters
+dp_mod <- readRDS("../bad_clustering_article/fitted_models/toy_data/tsne_dpmm_c1.rds")
+x <- dp_mod$data
+nobs <- nrow(x)
+nsims <- length(dp_mod$alphaChain)
+
+# x <- scale(as.matrix(readRDS("data/clean_data/tsne.rds")))
+# nobs <- nrow(x)
+# nsims <- 1000
+
+# # Fit the DPMM  Model
+# g0Priors <- list(mu0 = rep(0,ncol(x)),
+#                  Lambda = diag(ncol(x)),
+#                  kappa0 = 0.1, #0.01,
+#                  nu = 10) # 200
+# dp_mod <- DirichletProcessMvnormal(x, 
+#                                    numInitialClusters = 20,
+#                                    g0Priors = g0Priors,
+#                                    alphaPriors = c(1,0.01))
+# dp_mod <- custom_init(dp_mod)
+# dp_mod <- Fit(dp_mod, nsims)
 
 
 # Extract the Density Samples at the Observations and on a Grid
@@ -47,9 +50,10 @@ density_clustering_samps <-
                           split_err_prob = SPLIT_ERR_PROB)
 density_pe <- salso_custom(density_clustering_samps)
 
+density_pe <- partition_at_level(0.5, x, colMeans(density_clustering_samps != 0), attr(density_clustering_samps,'delta'))
+
 # Method 1 - noise/non-noise level bounds
-source('R/credible_bounds.R')
-bounds <- credible_bounds_active_inactive(x, density_clustering_samps)
+bounds <- credible_ball_bounds_active_inactive(x, density_pe, density_clustering_samps)
 active_lb <- bounds$lower
 active_ub <- bounds$upper
 
@@ -139,3 +143,10 @@ grid.arrange(p2, p1, p3,
                             gp = gpar(fontsize = 18)))
 dev.off()
 
+png("output/toy_challenge/density_bound_analysis_2.png", 
+    width = 15, height = 5, units = 'in', res = 300)
+grid.arrange(p2, p1, p3,
+             nrow = 1, ncol = 3, 
+             top = textGrob("Bound Analysis - Density Based Clustering", 
+                            gp = gpar(fontsize = 18)))
+dev.off()

@@ -5,7 +5,7 @@ fn_from_apt <- function(res, xvals, max.resol){
   
   fn_samps <- matrix(nrow = nsims, ncol = nobs)
   for(s in 1:nsims){
-    if(s %% 10 == 0){
+    if(s %% 100 == 0){
       print(s)
     }
     part.post.sample <- res$part_points_post_samples[[s]]

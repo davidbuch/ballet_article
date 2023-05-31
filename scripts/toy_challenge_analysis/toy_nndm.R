@@ -58,17 +58,17 @@ for(d in 1:length(toy_datasets)){
     # Get the Density-Based Cluster Allocations and Our Credible Bounds
     density_clustering_samps <- 
       density_based_clusterer(x, fn_samps_obs, 
-                              cut_quantile = 0.075, 
-                              split_err_prob = 0)
+                              cut_quantile = 0.125, 
+                              split_err_prob = 0.01)
     rm(fn_samps_obs)
     pst <- compute_pst(density_clustering_samps)
     pdt <- compute_pdt(density_clustering_samps)
     density_pe <- salso_custom(density_clustering_samps, pst, pdt)
-    density_bounds <- credible_bounds(density_pe, 
-                                      density_clustering_samps)
+    density_bounds <- credible_ball_bounds_active_inactive(x, density_pe, density_clustering_samps)
+    
     plot_obs$db_pe <- density_pe
-    plot_obs$db_vu <- density_bounds$min
-    plot_obs$db_vl <- density_bounds$max
+    plot_obs$db_vl <- density_bounds$lower
+    plot_obs$db_vu <- density_bounds$upper
     
     saveRDS(plot_obs, paste0("output/toy_challenge/plot_obs_nndm_", dataset_name, ".rds"))
     saveRDS(plot_grid, paste0("output/toy_challenge/plot_grid_nndm_", dataset_name, ".rds"))
