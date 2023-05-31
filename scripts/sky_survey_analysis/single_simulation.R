@@ -74,7 +74,7 @@ close(pb)
 # ---------------------------------------------------------
 # Find the density based clusters
 target_quantile <- 0.9
-minPts <- 20 # determined from pre-simulation
+minPts <- 10 # determined from pre-simulation
 split_err_prob <- 0.05 # determined from pre-simulation
 
 clustering_samps <- density_based_clusterer(X, 
@@ -94,12 +94,12 @@ data$pe <- salso_custom(clustering_samps,
                         pdt = posterior_difference_tensor,
                         always0_indcs = always0_indcs)
 
-bounds <- credible_bounds_active_inactive(X, clustering_samps)
+bounds <- credible_ball_bounds_active_inactive(X, data$pe, clustering_samps)
 data$lb <- bounds$lower
 data$ub <- bounds$upper
 
 # ----------------------------------------
-# Find the DBSCAN clusters
+# Find the DBSCAN clusters I - band minPts
 # ----------------------------------------
 napprox <- 1000 # find epsilon based on an approximation of the full data
 tX <- t(X) # convenient to have this for operation broadcasting computations 
@@ -118,22 +118,45 @@ dbfit <- dbscan(X, eps = eps, minPts = minPts, borderPoints = FALSE)
 data$dbscan <- dbfit$cluster
 
 # ----------------------------------------
+# Find the DBSCAN clusters - II minPts = 60
+# ----------------------------------------
+minPts <- 60
+napprox <- 1000 # find epsilon based on an approximation of the full data
+tX <- t(X) # convenient to have this for operation broadcasting computations 
+minPts_NN_dists <- c()
+row_samps <- sample(1:nobs, napprox)
+for(ridx in row_samps){
+  x <- tX[,ridx]
+  dists <- sqrt(colSums((tX - x)^2))
+  minPts_NN_dists <- c(minPts_NN_dists,
+                       sort(dists, partial = minPts)[minPts])
+}
+minPts_NN_dists <- sort(minPts_NN_dists)
+eps <- minPts_NN_dists[round(napprox*(1 - target_quantile))]
+
+dbfit <- dbscan(X, eps = eps, minPts = minPts, borderPoints = FALSE)
+data$dbscan_60 <- dbfit$cluster
+
+# ----------------------------------------
 # Save the Results
 # ----------------------------------------
 test_results <- data.frame(
   seed = random_seed,
-  type = c("DBSCAN",
+  type = c("DBSCAN_60",
+           "DBSCAN",
            "BAND_LB",
            "BAND_PE",
            "BAND_UB"
   ),
   sensitivity = c(
+    sensitivity(X, data$dbscan_60, mu),
     sensitivity(X, data$dbscan, mu),
     sensitivity(X, data$lb, mu),
     sensitivity(X, data$pe, mu),
     sensitivity(X, data$ub, mu)
   ),
   specificity = c(
+    specificity(X, data$dbscan_60, mu),
     specificity(X, data$dbscan, mu),
     specificity(X, data$lb, mu),
     specificity(X, data$pe, mu),

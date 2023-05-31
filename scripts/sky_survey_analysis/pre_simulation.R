@@ -24,7 +24,7 @@ active_parts <- rgamma(K, 3)
 active_parts <- active_parts / sum(active_parts)
 
 png("output/sky_survey_analysis/simulation_component_weights.png", 
-    width = 10, height = 10, units = 'in', res = 300)
+    width = 5, height = 5, units = 'in', res = 300)
 barplot((1 - R)*active_parts, 
         xlab = 'Component ID', 
         ylab = 'Assignment Probabilities', 
@@ -55,7 +55,7 @@ z <- z[sel_in_bounds]
 data <- data.frame(x = X[,1], y = X[,2], z = factor(z))
 
 png("output/sky_survey_analysis/simstudy_data.png", 
-    width = 10, height = 10, units = 'in', res = 300)
+    width = 5, height = 5, units = 'in', res = 300)
 ggplot() +
   geom_point(data = data %>% filter(z == '0'),
              aes(x = x, y = y), color = 'grey', alpha = 0.5, size = 0.1) +
@@ -87,7 +87,7 @@ plot_grid <- with(data,
                               y = seq(min(y), max(y)*(1-1e-8), length.out = grid_res))
 )
 plot_grid$f_pe <- rep(0, nrow(plot_grid))
-pb <- txtProgressBar()
+pb <- txtProgressBar(width = 30, style = 3)
 for(s in 1:nsamps){
   tryCatch({
     plot_grid$f_pe <- plot_grid$f_pe + 
@@ -146,7 +146,7 @@ target_quantile <- 0.9
 approximate_number_of_clusters <- 100
 points_per_cluster <- (1 - target_quantile)*nobs / 
   approximate_number_of_clusters
-minPts <- round(points_per_cluster / 2)
+minPts <- round(points_per_cluster / 4)
 print(sprintf("Hueristic Suggested minPts: %d", minPts))
 
 
@@ -214,7 +214,7 @@ dev.off()
 
 # There's seemingly no improvement in BAND from scanning over minPts,
 # so stick with the default from the heuristic
-minPts <- round(points_per_cluster / 2)
+minPts <- round(points_per_cluster / 4)
 
 
 clustering_samps <- density_based_clusterer(X, 
@@ -234,7 +234,7 @@ data$pe <- salso_custom(clustering_samps,
                         pdt = posterior_difference_tensor,
                         always0_indcs = always0_indcs)
 
-bounds <- credible_bounds_active_inactive(X, clustering_samps)
+bounds <- credible_ball_bounds_active_inactive(X, data$pe, clustering_samps)
 data$lb <- bounds$lower
 data$ub <- bounds$upper
 
@@ -283,6 +283,7 @@ dev.off()
 # ----------------------------------------
 # Find the DBSCAN clusters
 # ----------------------------------------
+minPts_band <- minPts # save the value of minPts we were using for BAND
 napprox <- 1000 # find epsilon based on an approximation of the full data
 minPts_options <- seq(10, 100, 10)
 tX <- t(X) # convenient to have this for operation broadcasting computations 
@@ -339,23 +340,44 @@ minPts_NN_dists <- sort(minPts_NN_dists)
 eps <- minPts_NN_dists[round(napprox*(1 - target_quantile))]
 
 dbfit <- dbscan(X, eps = eps, minPts = minPts, borderPoints = FALSE)
-data$dbscan <- dbfit$cluster
+data$dbscan_best <- dbfit$cluster
 
+dbfit <- dbscan(X, eps = eps, minPts = minPts_band, borderPoints = FALSE)
+data$dbscan_bmp <- dbfit$cluster
 
 png("output/sky_survey_analysis/dbscan_best_performance.png", 
     width = 5, height = 5, units = 'in', res = 300)
-enriched_data <- enrich_small_clusters(data, 'dbscan', size_lb = 25)
+enriched_data <- enrich_small_clusters(data, 'dbscan_best', size_lb = 25)
 ggplot() + 
-  geom_point(aes(x = x, y = y, color = factor(dbscan)), 
-             size = 0.1, data = data %>% filter(dbscan != 0)) + 
+  geom_point(aes(x = x, y = y, color = factor(dbscan_best)), 
+             size = 0.1, data = data %>% filter(dbscan_best != 0)) + 
   geom_point(aes(x = x, y = y), 
              size = 0.1, alpha = 0.1, color = 'grey', 
-             data = data %>% filter(dbscan == 0)) +
-  stat_ellipse(aes(x = x, y = y, group = factor(dbscan)), 
-               data = enriched_data %>% filter(dbscan != 0)) +
+             data = data %>% filter(dbscan_best == 0)) +
+  stat_ellipse(aes(x = x, y = y, group = factor(dbscan_best)), 
+               data = enriched_data %>% filter(dbscan_best != 0)) +
   geom_point(aes(x = X1, y = X2), shape = 4, size = 2, data = data.frame(mu)) + 
   guides(color = 'none') + 
   labs(title = "DBSCAN Estimated Clusters and True Locations",
        subtitle = sprintf("minPts: %d, eps: %.2f, sensitivity: %.2f, specificity: %.2f", minPts, eps, sensitivity(X, data$dbscan, mu), specificity(X, data$dbscan, mu)),
        x = NULL, y = NULL)
 dev.off()
+
+png("output/sky_survey_analysis/dbscan_band_minpts.png", 
+    width = 5, height = 5, units = 'in', res = 300)
+enriched_data <- enrich_small_clusters(data, 'dbscan_bmp', size_lb = 25)
+ggplot() + 
+  geom_point(aes(x = x, y = y, color = factor(dbscan_bmp)), 
+             size = 0.1, data = data %>% filter(dbscan_bmp != 0)) + 
+  geom_point(aes(x = x, y = y), 
+             size = 0.1, alpha = 0.1, color = 'grey', 
+             data = data %>% filter(dbscan_bmp == 0)) +
+  stat_ellipse(aes(x = x, y = y, group = factor(dbscan_bmp)), 
+               data = enriched_data %>% filter(dbscan_bmp != 0)) +
+  geom_point(aes(x = X1, y = X2), shape = 4, size = 2, data = data.frame(mu)) + 
+  guides(color = 'none') + 
+  labs(title = "DBSCAN Estimated Clusters and True Locations",
+       subtitle = sprintf("minPts: %d, eps: %.2f, sensitivity: %.2f, specificity: %.2f", minPts_band, eps, sensitivity(X, data$dbscan, mu), specificity(X, data$dbscan, mu)),
+       x = NULL, y = NULL)
+dev.off()
+

@@ -7,7 +7,7 @@ filename_list <- filename_list[str_detect(filename_list, '.rds')]
 
 files <- list()
 for(i in 1:length(filename_list)){
-  files[[i]] <- readRDS(filename_list[[i]])
+  files[[i]] <- readRDS(paste0(dir_name, '/',filename_list[[i]]))
 }
 
 test_results <- do.call(rbind, files)
