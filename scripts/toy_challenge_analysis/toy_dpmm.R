@@ -3,7 +3,6 @@
 library(tidyverse)
 library(grid)
 library(gridExtra)
-library(concaveman)
 library(dirichletprocess)
 library(salso)
 library(mcclust.ext)
