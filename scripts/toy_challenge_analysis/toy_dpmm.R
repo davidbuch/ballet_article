@@ -33,73 +33,71 @@ toy_datasets <- list(
 nsims <- 1000
 for(d in 1:length(toy_datasets)){
   dataset_name <- names(toy_datasets)[d]
-  if(!file.exists(paste0("output/toy_challenge/plot_obs_dpmm_", dataset_name, ".rds")) ||
-     !file.exists(paste0("output/toy_challenge/plot_grid_dpmm_", dataset_name, ".rds"))){
-    x <- scale(as.matrix(toy_datasets[[d]]))
-    xx <- yy <- seq(-3,3, length.out = 30)
-    xy_grid <- as.matrix(expand.grid(xx,yy))
-    
-    plot_obs <- toy_datasets[[d]]
-    plot_grid <- data.frame(x = xy_grid[,1],
-                            y = xy_grid[,2])
-    
-    g0Priors <- list(mu0 = rep(0,ncol(x)),
-                     Lambda = diag(ncol(x)),
-                     kappa0 = 0.1, #0.01,
-                     nu = 10) # 200
-    # Fit the DPMM  Model
-    dp_mod <- DirichletProcessMvnormal(x, 
-                                       numInitialClusters = 20,
-                                       g0Priors = g0Priors,
-                                       alphaPriors = c(1,0.01))
-    dp_mod <- custom_init(dp_mod)
-    dp_mod <- Fit(dp_mod, nsims)
-    
-    # Extract the Density Samples at the Observations and on a Grid
-    fn_samps_obs <- matrix(nrow = nsims, ncol = nrow(x))
-    for(s in 1:nsims)
-      fn_samps_obs[s,] <- PosteriorFunction(dp_mod, s)(x)
-    plot_obs$f_pe <- colMeans(fn_samps_obs)
-    
-    fn_samps_grid <- matrix(nrow = nsims, ncol = nrow(xy_grid))
-    for(s in 1:nsims)
-      fn_samps_grid[s,] <- PosteriorFunction(dp_mod, s)(xy_grid)
-    plot_grid$f_pe <- colMeans(fn_samps_grid)
-    rm(fn_samps_grid)
-    
-    # Get the Model-Based Cluster Allocations and WG Vertical Credible Bounds
-    mixture_clustering_samps <- matrix(nrow = nsims, ncol = nrow(x))
-    for(s in 1:nsims)
-      mixture_clustering_samps[s,] <- dp_mod$labelsChain[[s]]
-    
-    mixture_pe <- salso::salso(mixture_clustering_samps, 
-                               maxZealousAttempts = 25)
-    mixture_bounds <- model_based_credible_bounds(mixture_pe,
-                                                  mixture_clustering_samps)
-    wg_mixture_bounds <- mcclust.ext::credibleball(mixture_pe, mixture_clustering_samps)
-    plot_obs$mm_pe <- mixture_pe
-    plot_obs$mm_vl <- mixture_bounds$lower
-    plot_obs$mm_vu <- mixture_bounds$upper
-    plot_obs$mm_vl_wg <- wg_mixture_bounds$c.lowervert[1,]
-    plot_obs$mm_vu_wg <- wg_mixture_bounds$c.uppervert[1,]
-    rm(dp_mod)
-    
-    # Get the Density-Based Cluster Allocations and Our Credible Bounds
-    density_clustering_samps <- 
-      density_based_clusterer(x, fn_samps_obs, 
-                              cut_quantile = 0.125, 
-                              split_err_prob = 0.01)
-    rm(fn_samps_obs)
-    pst <- compute_pst(density_clustering_samps)
-    pdt <- compute_pdt(density_clustering_samps)
-    density_pe <- salso_custom(density_clustering_samps, pst, pdt)
-    density_bounds <- credible_ball_bounds_active_inactive(x, density_pe, density_clustering_samps)
-    
-    plot_obs$db_pe <- density_pe
-    plot_obs$db_vl <- density_bounds$lower
-    plot_obs$db_vu <- density_bounds$upper
-    
-    saveRDS(plot_obs, paste0("output/toy_challenge/plot_obs_dpmm_", dataset_name, ".rds"))
-    saveRDS(plot_grid, paste0("output/toy_challenge/plot_grid_dpmm_", dataset_name, ".rds"))
-  }
+  x <- scale(as.matrix(toy_datasets[[d]]))
+  xx <- yy <- seq(-3,3, length.out = 30)
+  xy_grid <- as.matrix(expand.grid(xx,yy))
+  
+  plot_obs <- toy_datasets[[d]]
+  plot_grid <- data.frame(x = xy_grid[,1],
+                          y = xy_grid[,2])
+  
+  g0Priors <- list(mu0 = rep(0,ncol(x)),
+                   Lambda = diag(ncol(x)),
+                   kappa0 = 0.1, #0.01,
+                   nu = 10) # 200
+  # Fit the DPMM  Model
+  dp_mod <- DirichletProcessMvnormal(x, 
+                                     numInitialClusters = 20,
+                                     g0Priors = g0Priors,
+                                     alphaPriors = c(1,0.01))
+  dp_mod <- custom_init(dp_mod)
+  dp_mod <- Fit(dp_mod, nsims)
+  
+  # Extract the Density Samples at the Observations and on a Grid
+  fn_samps_obs <- matrix(nrow = nsims, ncol = nrow(x))
+  for(s in 1:nsims)
+    fn_samps_obs[s,] <- PosteriorFunction(dp_mod, s)(x)
+  plot_obs$f_pe <- colMeans(fn_samps_obs)
+  
+  fn_samps_grid <- matrix(nrow = nsims, ncol = nrow(xy_grid))
+  for(s in 1:nsims)
+    fn_samps_grid[s,] <- PosteriorFunction(dp_mod, s)(xy_grid)
+  plot_grid$f_pe <- colMeans(fn_samps_grid)
+  rm(fn_samps_grid)
+  
+  # Get the Model-Based Cluster Allocations and WG Vertical Credible Bounds
+  mixture_clustering_samps <- matrix(nrow = nsims, ncol = nrow(x))
+  for(s in 1:nsims)
+    mixture_clustering_samps[s,] <- dp_mod$labelsChain[[s]]
+  
+  mixture_pe <- salso::salso(mixture_clustering_samps, 
+                             maxZealousAttempts = 25)
+  mixture_bounds <- model_based_credible_bounds(mixture_pe,
+                                                mixture_clustering_samps)
+  wg_mixture_bounds <- mcclust.ext::credibleball(mixture_pe, mixture_clustering_samps)
+  plot_obs$mm_pe <- mixture_pe
+  plot_obs$mm_vl <- mixture_bounds$lower
+  plot_obs$mm_vu <- mixture_bounds$upper
+  plot_obs$mm_vl_wg <- wg_mixture_bounds$c.lowervert[1,]
+  plot_obs$mm_vu_wg <- wg_mixture_bounds$c.uppervert[1,]
+  rm(dp_mod)
+  
+  # Get the Density-Based Cluster Allocations and Our Credible Bounds
+  density_clustering_samps <- 
+    density_based_clusterer(x, fn_samps_obs, 
+                            cut_quantile = 0.125, 
+                            split_err_prob = 0.01)
+  rm(fn_samps_obs)
+  pst <- compute_pst(density_clustering_samps)
+  pdt <- compute_pdt(density_clustering_samps)
+  density_pe <- salso_custom(density_clustering_samps, pst, pdt)
+  density_bounds <- credible_ball_bounds_active_inactive(x, density_pe, density_clustering_samps)
+  
+  plot_obs$db_pe <- density_pe
+  plot_obs$db_vl <- density_bounds$lower
+  plot_obs$db_vu <- density_bounds$upper
+  
+  saveRDS(plot_obs, paste0("output/toy_challenge/plot_obs_dpmm_", dataset_name, ".rds"))
+  saveRDS(plot_grid, paste0("output/toy_challenge/plot_grid_dpmm_", dataset_name, ".rds"))
+  
 }
