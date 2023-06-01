@@ -42,6 +42,8 @@ for(d in 1:length(toy_datasets)){
     max.resol = 10
     res_obs <- apt(X = x, Xpred = x, n.post.samples = nsims, max.resol = max.resol)
     fn_samps_obs <- fn_from_apt(res_obs, x, max.resol) 
+    fn_samps_obs <- fn_samps_obs / prod(attr(x, "scaled:range"))
+    plot_obs$f_pe <- colMeans(fn_samps_obs)
     
     res_grid <- apt(X = x, Xpred = xy_grid, n.post.samples = nsims, max.resol = max.resol)
     fn_samps_grid <- fn_from_apt(res_grid, xy_grid, max.resol)

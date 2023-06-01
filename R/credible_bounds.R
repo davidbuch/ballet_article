@@ -185,3 +185,29 @@ partition_at_level <- function(level,
   
   return(partition)
 }
+
+
+model_based_credible_bounds <- function(pe, 
+                                        clustering_samps,
+                                        prob = 0.95){
+  sample_losses <- apply(clustering_samps, 1, 
+                         \(cs) salso::VI(pe, cs))
+  eps_star <- quantile(sample_losses, prob)
+  
+  # Scan over the value of Sep Loss
+  bp_grid <- seq(0.1, 1.9, by = 0.1)
+  mixture_pes <- matrix(nrow = length(bp_grid), ncol = ncol(clustering_samps))
+  for(pv in 1:nrow(mixture_pes)){
+    cat(sprintf("Penalty Value: %d\n", pv))
+    mixture_pes[pv,] <- salso::salso(clustering_samps, 
+                                     loss = salso::VI(a = bp_grid[pv]),
+                                     maxNClusters = 1000,
+                                     maxZealousAttempts = 1000)
+  }
+  pe_losses <- apply(mixture_pes, 1, \(cs) salso::VI(pe, cs))
+  credible_bounds <- list(
+    lower = mixture_pes[min(which(pe_losses < eps_star)) - 1,],
+    upper = mixture_pes[max(which(pe_losses < eps_star)) + 1,]
+  )
+  return(credible_bounds)
+}

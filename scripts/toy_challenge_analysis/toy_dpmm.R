@@ -15,7 +15,7 @@ source("R/rearrange_labels.R")
 Rcpp::sourceCpp("src/subpartiton_min_max.cpp")
 dir.create('output/toy_challenge', recursive = TRUE, showWarnings = FALSE)
 
-set.seed(1234)
+set.seed(12345)
 
 
 two_moons <- readRDS("data/clean_data/two_moons.rds")
@@ -23,15 +23,14 @@ circles <- readRDS("data/clean_data/noisy_circles.rds")
 tsne <- readRDS("data/clean_data/tsne.rds")
 
 toy_datasets <- list(
+  tsne = tsne,
   two_moons = two_moons,
-  circles = circles,
-  tsne = tsne
+  circles = circles
 )
 
 # This Loop Will Create dataframes for each dataset that contain a variety of 
 # information we would like to plot.
 nsims <- 1000
-burn <- floor(nsims / 2)
 for(d in 1:length(toy_datasets)){
   dataset_name <- names(toy_datasets)[d]
   if(!file.exists(paste0("output/toy_challenge/plot_obs_dpmm_", dataset_name, ".rds")) ||
@@ -60,6 +59,7 @@ for(d in 1:length(toy_datasets)){
     fn_samps_obs <- matrix(nrow = nsims, ncol = nrow(x))
     for(s in 1:nsims)
       fn_samps_obs[s,] <- PosteriorFunction(dp_mod, s)(x)
+    plot_obs$f_pe <- colMeans(fn_samps_obs)
     
     fn_samps_grid <- matrix(nrow = nsims, ncol = nrow(xy_grid))
     for(s in 1:nsims)
@@ -71,17 +71,15 @@ for(d in 1:length(toy_datasets)){
     mixture_clustering_samps <- matrix(nrow = nsims, ncol = nrow(x))
     for(s in 1:nsims)
       mixture_clustering_samps[s,] <- dp_mod$labelsChain[[s]]
-    # drop some burn-in samples
-    mixture_clustering_samps <- mixture_clustering_samps[(burn + 1):nsims,]
     
     mixture_pe <- salso::salso(mixture_clustering_samps, 
                                maxZealousAttempts = 25)
-    mixture_bounds <- credible_bounds(mixture_pe,
-                                      mixture_clustering_samps)
+    mixture_bounds <- model_based_credible_bounds(mixture_pe,
+                                                  mixture_clustering_samps)
     wg_mixture_bounds <- mcclust.ext::credibleball(mixture_pe, mixture_clustering_samps)
     plot_obs$mm_pe <- mixture_pe
-    plot_obs$mm_vl <- mixture_bounds$min
-    plot_obs$mm_vu <- mixture_bounds$max
+    plot_obs$mm_vl <- mixture_bounds$lower
+    plot_obs$mm_vu <- mixture_bounds$upper
     plot_obs$mm_vl_wg <- wg_mixture_bounds$c.lowervert[1,]
     plot_obs$mm_vu_wg <- wg_mixture_bounds$c.uppervert[1,]
     rm(dp_mod)

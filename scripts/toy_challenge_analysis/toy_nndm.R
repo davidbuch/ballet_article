@@ -46,6 +46,7 @@ for(d in 1:length(toy_datasets)){
     res <- mNNDM(x = x, MC = nsims, k = 10, inputpt = x, 
                  mu0 = mu0, nu0 = nu0, gamma0 = p)
     fn_samps_obs <- t(res$f_stor)
+    plot_obs$f_pe <- colMeans(fn_samps_obs)
     
     res <- mNNDM(x = x, MC = nsims, k = 10, inputpt = xy_grid, 
                  mu0 = mu0, nu0 = nu0, gamma0 = p)

@@ -7,3 +7,5 @@
 output/
 data/clean_data/
 data/intermediate_data/
+*.out
+*.err
