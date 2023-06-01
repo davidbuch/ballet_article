@@ -342,7 +342,17 @@ eps <- minPts_NN_dists[round(napprox*(1 - target_quantile))]
 dbfit <- dbscan(X, eps = eps, minPts = minPts, borderPoints = FALSE)
 data$dbscan_best <- dbfit$cluster
 
-dbfit <- dbscan(X, eps = eps, minPts = minPts_band, borderPoints = FALSE)
+minPts_NN_dists <- c()
+for(ridx in row_samps){
+  x <- tX[,ridx]
+  dists <- sqrt(colSums((tX - x)^2))
+  minPts_NN_dists <- c(minPts_NN_dists,
+                       sort(dists, partial = minPts_band)[minPts_band])
+}
+minPts_NN_dists <- sort(minPts_NN_dists)
+eps_band <- minPts_NN_dists[round(napprox*(1 - target_quantile))]
+
+dbfit <- dbscan(X, eps = eps_band, minPts = minPts_band, borderPoints = FALSE)
 data$dbscan_bmp <- dbfit$cluster
 
 png("output/sky_survey_analysis/dbscan_best_performance.png", 
@@ -359,7 +369,8 @@ ggplot() +
   geom_point(aes(x = X1, y = X2), shape = 4, size = 2, data = data.frame(mu)) + 
   guides(color = 'none') + 
   labs(title = "DBSCAN Estimated Clusters and True Locations",
-       subtitle = sprintf("minPts: %d, eps: %.2f, sensitivity: %.2f, specificity: %.2f", minPts, eps, sensitivity(X, data$dbscan, mu), specificity(X, data$dbscan, mu)),
+       subtitle = sprintf("minPts: %d, eps: %.2f, sensitivity: %.2f, specificity: %.2f", 
+                          minPts, eps, sensitivity(X, data$dbscan_best, mu), specificity(X, data$dbscan_best, mu)),
        x = NULL, y = NULL)
 dev.off()
 
@@ -377,7 +388,8 @@ ggplot() +
   geom_point(aes(x = X1, y = X2), shape = 4, size = 2, data = data.frame(mu)) + 
   guides(color = 'none') + 
   labs(title = "DBSCAN Estimated Clusters and True Locations",
-       subtitle = sprintf("minPts: %d, eps: %.2f, sensitivity: %.2f, specificity: %.2f", minPts_band, eps, sensitivity(X, data$dbscan, mu), specificity(X, data$dbscan, mu)),
+       subtitle = sprintf("minPts: %d, eps: %.2f, sensitivity: %.2f, specificity: %.2f", 
+                          minPts_band, eps_band, sensitivity(X, data$dbscan_bmp, mu), specificity(X, data$dbscan_bmp, mu)),
        x = NULL, y = NULL)
 dev.off()
 

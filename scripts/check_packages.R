@@ -1,4 +1,5 @@
 chooseCRANmirror(ind=70)
+# just the packages needed for the sky survey analysis
 library(plyr)
 library(tidyverse)
 library(salso)
@@ -9,8 +10,4 @@ library(grid)
 library(gridExtra)
 library(synthesis)
 library(dirichletprocess)
-library(PTT)
-library(NNDM)
-#library(concaveman)
-library(fdm2id)
-library(geometry)
+

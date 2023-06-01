@@ -22,7 +22,7 @@ enrich_small_clusters <- function(df, label_col, size_lb = 20, ntimes = 50){
 
   cluster_info <- df %>% 
     group_by(!!rlang::sym(label_col)) %>%
-    summarise(mx = mean(x),
+    dplyr::summarise(mx = mean(x),
               my = mean(y),
               sdx = sd(x),
               sdy = sd(y),
@@ -70,7 +70,7 @@ specificity <- function(X, labels, target_locs, size_lb = 20, ntimes = 50){
   df <- data.frame(x = X[,1], y = X[,2], labs = labels)
   cluster_info <- df %>% 
     group_by(labs) %>%
-    summarise(mx = mean(x),
+    dplyr::summarise(mx = mean(x),
               my = mean(y),
               sdx = sd(x),
               sdy = sd(y),
