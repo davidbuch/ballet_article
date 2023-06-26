@@ -1,4 +1,4 @@
-library(dplyr)
+library(tidyverse)
 library(xtable)
 
 dir_name <- "output/sky_survey_analysis/sim_study"
