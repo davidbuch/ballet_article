@@ -25,7 +25,18 @@ tsne <- readRDS("data/clean_data/tsne.rds")
 toy_datasets <- list(
   tsne = tsne,
   two_moons = two_moons,
-  circles = circles
+  circles = circles,
+  tsne2 = tsne
+)
+
+
+ballet_params <- list( # we used to do tsne with minPts 5 and sep = 0
+  tsne = list(minPts = floor((nrow(tsne)/nrow(circles))*5), 
+               cut_quantile = 0.15, split_err_prob = 0.01),
+  two_moons = list(minPts = 5, cut_quantile = 0.08, split_err_prob = 0.01),
+  circles = list(minPts = 5, cut_quantile = 0.025, split_err_prob = 0.01),
+  tsne2 = list(minPts = floor((nrow(tsne)/nrow(circles))*5), 
+              cut_quantile = 0.08, split_err_prob = 0.01)
 )
 
 # This Loop Will Create dataframes for each dataset that contain a variety of 

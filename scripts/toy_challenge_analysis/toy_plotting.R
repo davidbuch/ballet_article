@@ -414,7 +414,7 @@ pdc_nc_dpmm <- ggplot() +
   geom_point(aes(x = x, y = y, color = db_pe), 
              size = 0.5, data = plot_obs_nc) + 
   geom_contour(aes(x = x, y = y, z = f_pe), 
-               breaks = quantile(plot_obs_nc$f_pe, 0.05),
+               breaks = quantile(plot_obs_nc$f_pe, 0.02),
                col = 'black',
                data = plot_grid_nc) + 
   scale_color_manual(values = color_vals_nc) +
@@ -440,7 +440,7 @@ pdc_tm_apt <- ggplot() +
   geom_point(aes(x = x, y = y, color = db_pe), 
              size = 0.5, data = plot_obs_tm_apt) + 
   geom_contour(aes(x = x, y = y, z = f_pe), 
-               breaks = quantile(plot_obs_tm_apt$f_pe, 0.125), 
+               breaks = quantile(plot_obs_tm_apt$f_pe, 0.08), 
                col = 'black',
                data = plot_grid_tm_apt) + 
   scale_color_manual(values = color_vals_tm) +
@@ -452,10 +452,10 @@ pdc_nc_apt <- ggplot() +
   geom_point(aes(x = x, y = y, color = db_pe), 
              size = 0.5, data = plot_obs_nc_apt) + 
   geom_contour(aes(x = x, y = y, z = f_pe), 
-               breaks = quantile(plot_obs_nc_apt$f_pe, 0.05),
+               breaks = quantile(plot_obs_nc_apt$f_pe, 0.02),
                col = 'black',
                data = plot_grid_nc_apt) + 
-  scale_color_manual(values = color_vals_tm) +
+  scale_color_manual(values = color_vals_nc) +
   guides(color = 'none') + 
   theme(plot.title = element_text(size=9)) +
   labs(title = ktitle(plot_obs_nc_apt$db_pe), x = NULL, y = NULL)
@@ -478,7 +478,7 @@ pdc_tm_nndm <- ggplot() +
   geom_point(aes(x = x, y = y, color = db_pe), 
              size = 0.5, data = plot_obs_tm_nndm) + 
   geom_contour(aes(x = x, y = y, z = f_pe), 
-               breaks = quantile(plot_obs_tm_nndm$f_pe, 0.125),
+               breaks = quantile(plot_obs_tm_nndm$f_pe, 0.08),
                col = 'black',
                data = plot_grid_tm_nndm) + 
   scale_color_manual(values = color_vals_tm) +
@@ -490,10 +490,10 @@ pdc_nc_nndm <- ggplot() +
   geom_point(aes(x = x, y = y, color = db_pe), 
              size = 0.5, data = plot_obs_nc_nndm) + 
   geom_contour(aes(x = x, y = y, z = f_pe), 
-               breaks = quantile(plot_obs_nc_nndm$f_pe, 0.05),
+               breaks = quantile(plot_obs_nc_nndm$f_pe, 0.02),
                col = 'black',
                data = plot_grid_nc_nndm) + 
-  scale_color_manual(values = color_vals_tm) +
+  scale_color_manual(values = color_vals_nc) +
   guides(color = 'none') + 
   theme(plot.title = element_text(size=9)) +
   labs(title = ktitle(plot_obs_nc_nndm$db_pe), x = NULL, y = NULL)
@@ -512,17 +512,17 @@ pdc_ts_nndm <- ggplot() +
   theme(plot.title = element_text(size=9)) +
   labs(title = ktitle(plot_obs_ts_nndm$db_pe), x = NULL, y = NULL)
 
-pdc_ts_nndm <- ggplot() + 
-  geom_point(aes(x = x, y = y, color = db_pe), 
-             size = 0.5, data = plot_obs_ts_nndm) + 
-  geom_contour(aes(x = x, y = y, z = f_pe), 
-               breaks = quantile(plot_obs_ts_nndm$f_pe, 0.05),
-               col = 'black',
-               data = plot_grid_ts_nndm) + 
-  scale_color_manual(values = color_vals_tm) +
-  guides(color = 'none') + 
-  theme(plot.title = element_text(size=9)) +
-  labs(title = ktitle(plot_obs_ts_nndm$db_pe), x = NULL, y = NULL)
+# pdc_ts_nndm <- ggplot() + 
+#   geom_point(aes(x = x, y = y, color = db_pe), 
+#              size = 0.5, data = plot_obs_ts_nndm) + 
+#   geom_contour(aes(x = x, y = y, z = f_pe), 
+#                breaks = quantile(plot_obs_ts_nndm$f_pe, 0.05),
+#                col = 'black',
+#                data = plot_grid_ts_nndm) + 
+#   scale_color_manual(values = color_vals_tm) +
+#   guides(color = 'none') + 
+#   theme(plot.title = element_text(size=9)) +
+#   labs(title = ktitle(plot_obs_ts_nndm$db_pe), x = NULL, y = NULL)
 
 
 png("output/toy_challenge/compare_ballet_clusterings.png", 

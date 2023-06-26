@@ -22,6 +22,13 @@ toy_datasets <- list(
   tsne = tsne
 )
 
+ballet_params <- list(
+  two_moons = list(minPts = 5, cut_quantile = 0.08, split_err_prob = 0.01),
+  circles = list(minPts = 5, cut_quantile = 0.025, split_err_prob = 0.01),
+  tsne = list(minPts = floor((nrow(tsne)/nrow(circles))*5), 
+              cut_quantile = 0.08, split_err_prob = 0.01)
+)
+
 # This Loop Will Create dataframes for each dataset that contain a variety of 
 # information we would like to plot.
 nsims <- 1000
@@ -55,12 +62,11 @@ for(d in 1:length(toy_datasets)){
   rm(fn_samps_grid)
   
   # Get the Density-Based Cluster Allocations and Our Credible Bounds
-  tsne_params <- list(minPts = 10, cut_quantile = 0.025, split_err_prob = 0.01)
   density_clustering_samps <- 
-    density_based_clusterer(x, fn_samps_obs, 
-                            minPts = 10,
-                            cut_quantile = 0.025, 
-                            split_err_prob = 0.01)
+    density_based_clusterer(x, fn_samps_obs[sample(nsims, 10),],
+                            minPts = ballet_params[[d]][['minPts']],
+                            cut_quantile = ballet_params[[d]][['cut_quantile']], 
+                            split_err_prob = ballet_params[[d]][['split_err_prob']])
   rm(fn_samps_obs)
   pst <- compute_pst(density_clustering_samps)
   pdt <- compute_pdt(density_clustering_samps)
