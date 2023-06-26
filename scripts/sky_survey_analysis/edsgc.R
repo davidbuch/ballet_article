@@ -121,8 +121,6 @@ bounds <- credible_ball_bounds_active_inactive(X, data$pe, clustering_samps)
 data$lb <- bounds$lower
 data$ub <- bounds$upper
 
-png("output/sky_survey_analysis/edsgc_clustering.png", 
-    width = 15, height = 5, units = 'in', res = 300)
 enriched_data_lb <- enrich_small_clusters(data, 'lb', size_lb = 25)
 p1 <- ggplot() + 
   geom_point(aes(x = x, y = y, color = factor(lb)), 
@@ -168,9 +166,16 @@ p3 <- ggplot() +
   labs(title = "97.5%-ile Upper Bound",
        subtitle = sprintf("minPts: %d, spep: %.2f", minPts, split_err_prob),
        x = NULL, y = NULL)
-grid.arrange(p1, p2, p3, nrow = 1)
+
+png("output/sky_survey_analysis/edsgc_clustering.png", 
+    width = 15, height = 5, units = 'in', res = 300)
+print(p2)
 dev.off()
 
+png("output/sky_survey_analysis/edsgc_bounds.png", 
+    width = 15, height = 5, units = 'in', res = 300)
+print(grid.arrange(p1, p3, nrow = 1))
+dev.off()
 
 # ----------------------------------------
 # Find the DBSCAN clusters

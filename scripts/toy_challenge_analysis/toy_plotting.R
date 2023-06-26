@@ -18,7 +18,7 @@ plot_grid_ts <- readRDS("output/toy_challenge/plot_grid_dpmm_tsne.rds")
 
 # Rearrange labels to facilitate better color discrimination among the largest clusters
 prep_labels <- function(plot_obs){
-  label_columns <- setdiff(colnames(plot_obs), c('x', 'y'))
+  label_columns <- setdiff(colnames(plot_obs), c('x', 'y', 'f_pe'))
   for(lc in label_columns){
     plot_obs[[lc]] <- rearrange_labels(plot_obs[[lc]])
     plot_obs[[lc]] <- factor(plot_obs[[lc]], 
@@ -114,7 +114,7 @@ grid.arrange(
               )),
   arrangeGrob(pdc_tm, pdc_ts,
               top = textGrob(
-                "BAND",
+                "BaLlet",
                 gp = gpar(fontface = 3, fontsize = 14)
               )),
   top = textGrob("Clustering Point Estimates - DPMM", 
@@ -173,7 +173,7 @@ grid.arrange(
                 "Upper Bound",
                 gp = gpar(fontface = 3, fontsize = 14)
               )),
-  top = textGrob("Model-Based Clustering - W&G Credible Balls", 
+  top = textGrob("Model-Based Clustering - W&G Credible Bounds", 
                  gp = gpar(fontsize = 18)),
   ncol = 3
 )
@@ -229,7 +229,7 @@ grid.arrange(
                 "Upper Bound",
                 gp = gpar(fontface = 3, fontsize = 14)
               )),
-  top = textGrob("Model-Based Clustering - New Credible Balls", 
+  top = textGrob("Model-Based Clustering - New Credible Bounds", 
                  gp = gpar(fontsize = 18)),
   ncol = 3
 )
@@ -286,25 +286,25 @@ pvu_ts <- ggplot() +
   theme(plot.title = element_text(size=9)) +
   labs(title = ktitle(plot_obs_ts$db_vu), x = NULL, y = NULL)
 
-png("output/toy_challenge/band_bounds_dpmm.png", 
-    width = 12, height = 8, units = 'in', res = 300)
+png("output/toy_challenge/ballet_bounds_dpmm.png", 
+    width = 12, height = 4, units = 'in', res = 300)
 grid.arrange(
-  arrangeGrob(pvl_tm, pvl_ts, 
+  arrangeGrob(pvl_ts, 
               top = textGrob(
                 "Lower Bound",
                 gp = gpar(fontface = 3, fontsize = 14)
               )),
-  arrangeGrob(pdc_tm, pdc_ts, 
+  arrangeGrob(pdc_ts, 
               top = textGrob(
                 "Point Estimate",
                 gp = gpar(fontface = 3, fontsize = 14)
               )),
-  arrangeGrob(pvu_tm, pvu_ts,
+  arrangeGrob(pvu_ts,
               top = textGrob(
                 "Upper Bound",
                 gp = gpar(fontface = 3, fontsize = 14)
               )),
-  top = textGrob("BAND Clustering - Credible Balls", 
+  top = textGrob("BaLlet Clustering - Credible Bounds", 
                  gp = gpar(fontsize = 18)),
   ncol = 3
 )
@@ -402,7 +402,8 @@ pdc_tm_dpmm <- ggplot() +
   geom_point(aes(x = x, y = y, color = db_pe), 
              size = 0.5, data = plot_obs_tm) + 
   geom_contour(aes(x = x, y = y, z = f_pe), 
-               breaks = 0.09, col = 'black',
+               breaks = quantile(plot_obs_tm$f_pe, 0.125), 
+               col = 'black',
                data = plot_grid_tm) + 
   scale_color_manual(values = color_vals_tm) +
   guides(color = 'none') + 
@@ -413,7 +414,8 @@ pdc_nc_dpmm <- ggplot() +
   geom_point(aes(x = x, y = y, color = db_pe), 
              size = 0.5, data = plot_obs_nc) + 
   geom_contour(aes(x = x, y = y, z = f_pe), 
-               breaks = 0.1, col = 'black',
+               breaks = quantile(plot_obs_nc$f_pe, 0.05),
+               col = 'black',
                data = plot_grid_nc) + 
   scale_color_manual(values = color_vals_nc) +
   guides(color = 'none') + 
@@ -438,7 +440,8 @@ pdc_tm_apt <- ggplot() +
   geom_point(aes(x = x, y = y, color = db_pe), 
              size = 0.5, data = plot_obs_tm_apt) + 
   geom_contour(aes(x = x, y = y, z = f_pe), 
-               breaks = 0.09, col = 'black',
+               breaks = quantile(plot_obs_tm_apt$f_pe, 0.125), 
+               col = 'black',
                data = plot_grid_tm_apt) + 
   scale_color_manual(values = color_vals_tm) +
   guides(color = 'none') + 
@@ -449,7 +452,7 @@ pdc_nc_apt <- ggplot() +
   geom_point(aes(x = x, y = y, color = db_pe), 
              size = 0.5, data = plot_obs_nc_apt) + 
   geom_contour(aes(x = x, y = y, z = f_pe), 
-               breaks = 0.07, #quantile(plot_obs_nc_apt$f_pe, 0.125),
+               breaks = quantile(plot_obs_nc_apt$f_pe, 0.05),
                col = 'black',
                data = plot_grid_nc_apt) + 
   scale_color_manual(values = color_vals_tm) +
@@ -475,7 +478,8 @@ pdc_tm_nndm <- ggplot() +
   geom_point(aes(x = x, y = y, color = db_pe), 
              size = 0.5, data = plot_obs_tm_nndm) + 
   geom_contour(aes(x = x, y = y, z = f_pe), 
-               breaks = 0.11, col = 'black',
+               breaks = quantile(plot_obs_tm_nndm$f_pe, 0.125),
+               col = 'black',
                data = plot_grid_tm_nndm) + 
   scale_color_manual(values = color_vals_tm) +
   guides(color = 'none') + 
@@ -486,7 +490,7 @@ pdc_nc_nndm <- ggplot() +
   geom_point(aes(x = x, y = y, color = db_pe), 
              size = 0.5, data = plot_obs_nc_nndm) + 
   geom_contour(aes(x = x, y = y, z = f_pe), 
-               breaks = 0.14,
+               breaks = quantile(plot_obs_nc_nndm$f_pe, 0.05),
                col = 'black',
                data = plot_grid_nc_nndm) + 
   scale_color_manual(values = color_vals_tm) +
@@ -508,7 +512,20 @@ pdc_ts_nndm <- ggplot() +
   theme(plot.title = element_text(size=9)) +
   labs(title = ktitle(plot_obs_ts_nndm$db_pe), x = NULL, y = NULL)
 
-png("output/toy_challenge/compare_band_clusterings.png", 
+pdc_ts_nndm <- ggplot() + 
+  geom_point(aes(x = x, y = y, color = db_pe), 
+             size = 0.5, data = plot_obs_ts_nndm) + 
+  geom_contour(aes(x = x, y = y, z = f_pe), 
+               breaks = quantile(plot_obs_ts_nndm$f_pe, 0.05),
+               col = 'black',
+               data = plot_grid_ts_nndm) + 
+  scale_color_manual(values = color_vals_tm) +
+  guides(color = 'none') + 
+  theme(plot.title = element_text(size=9)) +
+  labs(title = ktitle(plot_obs_ts_nndm$db_pe), x = NULL, y = NULL)
+
+
+png("output/toy_challenge/compare_ballet_clusterings.png", 
     width = 12, height = 8, units = 'in', res = 300)
 grid.arrange(
   arrangeGrob(pdc_tm_dpmm, pdc_nc_dpmm, pdc_ts_dpmm, 
@@ -526,53 +543,9 @@ grid.arrange(
                 "NN Dirichlet Mixture",
                 gp = gpar(fontface = 3, fontsize = 14)
               )),
-  top = textGrob("BAND Clustering Point Estimates", 
+  top = textGrob("BaLlet Clustering Point Estimates", 
                  gp = gpar(fontsize = 18)),
   ncol = 3
 )
 dev.off()
 
-# pf_nc <- ggplot(plot_grid_nc) +   
-#   geom_contour_filled(aes(x = x, y = y, z = f_pe)) + 
-#   guides(fill = 'none') + 
-#   labs(x = NULL, y = NULL)
-# pmc_nc <- ggplot(plot_obs_nc) + 
-#   geom_point(aes(x = x, y = y, color = mm_pe)) + 
-#   stat_ellipse(aes(x = x, y = y, group = mm_pe)) + 
-#   guides(color = 'none') + 
-#   labs(x = NULL, y = NULL)
-# pdc_nc <- ggplot() + 
-#   geom_point(aes(x = x, y = y, color = db_pe), 
-#              data = plot_obs_nc) + 
-#   geom_contour(aes(x = x, y = y, z = f_pe), 
-#                breaks = 0.07, col = 'black',
-#                data = plot_grid_nc) + 
-#   guides(color = 'none') + 
-#   labs(x = NULL, y = NULL)
-# pdc_nc <- ggplot() + 
-#   geom_point(aes(x = x, y = y, color = db_pe), data = plot_obs_nc) + 
-#   ggforce::geom_mark_hull(
-#     aes(x = x, y = y, group = db_pe), 
-#     expand = 2e-2,
-#     radius = 1e-2,
-#     concavity = 2,
-#     data = plot_obs_nc %>% filter(db_pe != 0)) +
-#   guides(color = 'none') + 
-#   labs(x = NULL, y = NULL)
-# 
-# pvl_nc <- ggplot() + 
-#   geom_point(aes(x = x, y = y, color = db_vl), 
-#              data = plot_obs_nc) + 
-#   geom_contour(aes(x = x, y = y, z = f_pe), 
-#                breaks = 0.07, col = 'black',
-#                data = plot_grid_nc) + 
-#   guides(color = 'none') + 
-#   labs(x = NULL, y = NULL)
-# pvu_nc <- ggplot() + 
-#   geom_point(aes(x = x, y = y, color = db_vu), 
-#              data = plot_obs_nc) + 
-#   geom_contour(aes(x = x, y = y, z = f_pe), 
-#                breaks = 0.07, col = 'black',
-#                data = plot_grid_nc) + 
-#   guides(color = 'none') + 
-#   labs(x = NULL, y = NULL)

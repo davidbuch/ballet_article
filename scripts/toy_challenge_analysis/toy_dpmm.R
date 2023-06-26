@@ -85,9 +85,8 @@ for(d in 1:length(toy_datasets)){
   # Get the Density-Based Cluster Allocations and Our Credible Bounds
   density_clustering_samps <- 
     density_based_clusterer(x, fn_samps_obs, 
-                            cut_quantile = 0.125, 
-                            split_err_prob = 0.01)
-  rm(fn_samps_obs)
+                            cut_quantile = 0.15, 
+                            split_err_prob = 0)
   pst <- compute_pst(density_clustering_samps)
   pdt <- compute_pdt(density_clustering_samps)
   density_pe <- salso_custom(density_clustering_samps, pst, pdt)

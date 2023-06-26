@@ -85,7 +85,7 @@ points(x[sel], posterior_expectation_f(x[sel], dpfit),
        col = c('firebrick2', 'darkgreen', 'dodgerblue3', 'cyan2')[clustering_point_estimate[sel]], cex = 2, pch = clustering_point_estimate[sel])
 dev.off()
 
-## Cluster using BAND - DPMM
+## Cluster using BaLlet - DPMM
 x <- matrix(x, ncol = 1)
 fsamps <- matrix(nrow = S, ncol = nrow(x))
 for(s in 1:S) fsamps[s,] <- PosteriorFunction(dpfit, s)(x)
@@ -95,7 +95,7 @@ lambda_delta <- compute_lambda_delta(x, fsamps, minPts = 5,
 clustering_samps <- density_based_clusterer(x, fsamps, lambda_delta = lambda_delta)
 clustering_point_estimate <- salso_custom(clustering_samps)
 
-png("output/illustrations/univariate_gauss_unif_band_dpmm.png", 
+png("output/illustrations/univariate_gauss_unif_ballet_dpmm.png", 
     width = 8, height = 8, units = 'in', res = 300)
 par(cex.axis = 2)
 plot(x_grid, fx, type = "l",

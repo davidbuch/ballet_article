@@ -70,7 +70,7 @@ for(s in 1:nsamps){
 close(pb)
 
 # ---------------------------------------------------------
-# Find the BAND clusters (Point Estimate and Bounds)
+# Find the BaLlet clusters (Point Estimate and Bounds)
 # ---------------------------------------------------------
 # Find the density based clusters
 target_quantile <- 0.9
@@ -99,7 +99,7 @@ data$lb <- bounds$lower
 data$ub <- bounds$upper
 
 # ----------------------------------------
-# Find the DBSCAN clusters I - band minPts
+# Find the DBSCAN clusters I - BaLlet minPts
 # ----------------------------------------
 napprox <- 1000 # find epsilon based on an approximation of the full data
 tX <- t(X) # convenient to have this for operation broadcasting computations 
@@ -144,9 +144,9 @@ test_results <- data.frame(
   seed = random_seed,
   type = c("DBSCAN_60",
            "DBSCAN",
-           "BAND_LB",
-           "BAND_PE",
-           "BAND_UB"
+           "BaLlet_LB",
+           "BaLlet_PE",
+           "BaLlet_UB"
   ),
   sensitivity = c(
     sensitivity(X, data$dbscan_60, mu),

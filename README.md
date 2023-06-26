@@ -1,6 +1,6 @@
-# Bayesian Density Based Clustering
+# Analysis Code for the Bayesian Level-Set (BaLlet) Clustering Article
 
-This folder contains R scripts necessary to reproduce all results featured in the Bayesian Density Based Clustering article by David Buch, Miheer Dewaskar, and David Dunson. Results can be organized as follows:
+This folder contains R scripts necessary to reproduce all results featured in the Bayesian Level-Set Clustering article by David Buch, Miheer Dewaskar, and David Dunson. Results can be organized as follows:
 
 1. An illustrative univariate toy data example, where data are generated from a 
 mixture of a uniform distribution and a Gaussian distribution, centered sufficiently

@@ -137,7 +137,7 @@ for(s in 1:nsamps){
 close(pb)
 
 # ----------------------------------------
-# Find the BAND clusters
+# Find the BaLlet clusters
 # ----------------------------------------
 # target quantile is scientifically motivated
 target_quantile <- 0.9
@@ -172,7 +172,7 @@ split_err_prob <- 0.05
 
 # Try finding an appropriate minPts algorithmically
 minPts_options <- seq(10, 100, 10)
-band_metrics <- data.frame()
+ballet_metrics <- data.frame()
 for(minPts in minPts_options){
   clustering_samps <- density_based_clusterer(X, 
                                               f_samps, 
@@ -189,19 +189,19 @@ for(minPts in minPts_options){
     cutree(h = attr(clustering_samps, 'delta'))
   
   # Evaluate the quality of the point estimate
-  band_metrics <- rbind(band_metrics,
+  ballet_metrics <- rbind(ballet_metrics,
                           list(minPts = minPts,
                                sensitivity = sensitivity(X, tmp_point_estimate, mu),
                                specificity = specificity(X, tmp_point_estimate, mu)
                           ))  
 }
 # Set minPts based on the observed metrics
-minPts <- minPts_options[which.max(band_metrics$sensitivity + 
-                                     band_metrics$specificity)]
+minPts <- minPts_options[which.max(ballet_metrics$sensitivity + 
+                                     ballet_metrics$specificity)]
 
-png("output/sky_survey_analysis/band_metrics.png", 
+png("output/sky_survey_analysis/ballet_metrics.png", 
     width = 5, height = 5, units = 'in', res = 300)
-band_metrics %>% 
+ballet_metrics %>% 
   pivot_longer(c(sensitivity, specificity), 
                names_to = 'metric',
                values_to = 'score') %>%
@@ -209,10 +209,10 @@ band_metrics %>%
   geom_line(aes(x = minPts, y = score, color = metric)) + 
   geom_vline(xintercept = minPts, color = 'red') +
   ylim(0,1) + 
-  labs(title = "BAND Performance")
+  labs(title = "BaLlet Performance")
 dev.off()
 
-# There's seemingly no improvement in BAND from scanning over minPts,
+# There's seemingly no improvement in BaLlet from scanning over minPts,
 # so stick with the default from the heuristic
 minPts <- round(points_per_cluster / 4)
 
@@ -238,7 +238,7 @@ bounds <- credible_ball_bounds_active_inactive(X, data$pe, clustering_samps)
 data$lb <- bounds$lower
 data$ub <- bounds$upper
 
-png("output/sky_survey_analysis/band_best_performance.png", 
+png("output/sky_survey_analysis/ballet_best_performance.png", 
     width = 15, height = 5, units = 'in', res = 300)
 enriched_data_lb <- enrich_small_clusters(data, 'lb', size_lb = 25)
 p1 <- ggplot() + 
@@ -283,7 +283,7 @@ dev.off()
 # ----------------------------------------
 # Find the DBSCAN clusters
 # ----------------------------------------
-minPts_band <- minPts # save the value of minPts we were using for BAND
+minPts_ballet <- minPts # save the value of minPts we were using for BaLlet
 napprox <- 1000 # find epsilon based on an approximation of the full data
 minPts_options <- seq(10, 100, 10)
 tX <- t(X) # convenient to have this for operation broadcasting computations 
@@ -347,12 +347,12 @@ for(ridx in row_samps){
   x <- tX[,ridx]
   dists <- sqrt(colSums((tX - x)^2))
   minPts_NN_dists <- c(minPts_NN_dists,
-                       sort(dists, partial = minPts_band)[minPts_band])
+                       sort(dists, partial = minPts_ballet)[minPts_ballet])
 }
 minPts_NN_dists <- sort(minPts_NN_dists)
-eps_band <- minPts_NN_dists[round(napprox*(1 - target_quantile))]
+eps_ballet <- minPts_NN_dists[round(napprox*(1 - target_quantile))]
 
-dbfit <- dbscan(X, eps = eps_band, minPts = minPts_band, borderPoints = FALSE)
+dbfit <- dbscan(X, eps = eps_ballet, minPts = minPts_ballet, borderPoints = FALSE)
 data$dbscan_bmp <- dbfit$cluster
 
 png("output/sky_survey_analysis/dbscan_best_performance.png", 
@@ -374,7 +374,7 @@ ggplot() +
        x = NULL, y = NULL)
 dev.off()
 
-png("output/sky_survey_analysis/dbscan_band_minpts.png", 
+png("output/sky_survey_analysis/dbscan_ballet_minpts.png", 
     width = 5, height = 5, units = 'in', res = 300)
 enriched_data <- enrich_small_clusters(data, 'dbscan_bmp', size_lb = 25)
 ggplot() + 
@@ -389,7 +389,7 @@ ggplot() +
   guides(color = 'none') + 
   labs(title = "DBSCAN Estimated Clusters and True Locations",
        subtitle = sprintf("minPts: %d, eps: %.2f, sensitivity: %.2f, specificity: %.2f", 
-                          minPts_band, eps_band, sensitivity(X, data$dbscan_bmp, mu), specificity(X, data$dbscan_bmp, mu)),
+                          minPts_ballet, eps_ballet, sensitivity(X, data$dbscan_bmp, mu), specificity(X, data$dbscan_bmp, mu)),
        x = NULL, y = NULL)
 dev.off()
 

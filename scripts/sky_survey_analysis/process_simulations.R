@@ -12,8 +12,11 @@ for(i in 1:length(filename_list)){
 
 test_results <- do.call(rbind, files)
 
-test_results %>% 
+result_summary <- test_results %>% 
   group_by(type) %>%
   summarise(sensitivity = mean(sensitivity),
             specificity = mean(specificity)) %>%
   xtable()
+
+print(result_summary, 
+      file = "output/sky_survey_analysis/sim_study_test_results.txt")
