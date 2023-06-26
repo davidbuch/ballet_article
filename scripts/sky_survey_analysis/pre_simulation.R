@@ -23,7 +23,7 @@ K <- 42 # number of non-noise clusters
 active_parts <- rgamma(K, 3)
 active_parts <- active_parts / sum(active_parts)
 
-png("output/sky_survey_analysis/simulation_component_weights.png", 
+png("output/sky_survey_analysis/synthdata_component_weights.png", 
     width = 5, height = 5, units = 'in', res = 300)
 barplot((1 - R)*active_parts, 
         xlab = 'Component ID', 
@@ -54,7 +54,7 @@ z <- z[sel_in_bounds]
 
 data <- data.frame(x = X[,1], y = X[,2], z = factor(z))
 
-png("output/sky_survey_analysis/simstudy_data.png", 
+png("output/sky_survey_analysis/synthdata_data.png", 
     width = 5, height = 5, units = 'in', res = 300)
 ggplot() +
   geom_point(data = data %>% filter(z == '0'),
@@ -108,7 +108,7 @@ for(k in 1:K){
     dnorm(plot_grid$y, mean = mu[k,2], sd = L[k,2,2])
 }
 
-png("output/sky_survey_analysis/simstudy_randhist_density.png", 
+png("output/sky_survey_analysis/synthdata_randhist_density.png", 
     width = 10, height = 5, units = 'in', res = 300)
 shared_breaks <- quantile(log(c(plot_grid$f_pe, plot_grid$f_true)), 
                           prob = c(0,seq(0.875,1,0.025)), names = FALSE)
@@ -159,7 +159,7 @@ for(i in 1:length(sperp_options))
                                   target_quantile, 
                                   minPts, 
                                   split_err_prob = sperp_options[i])[2]
-png("output/sky_survey_analysis/simstudy_delta_vs_sperp.png", 
+png("output/sky_survey_analysis/synthdata_delta_vs_sperp.png", 
     width = 10, height = 10, units = 'in', res = 300)
 plot(sperp_options, delta_options, 
      main = "Delta vs. Split Err. Prob.", 
@@ -199,7 +199,7 @@ for(minPts in minPts_options){
 minPts <- minPts_options[which.max(ballet_metrics$sensitivity + 
                                      ballet_metrics$specificity)]
 
-png("output/sky_survey_analysis/ballet_metrics.png", 
+png("output/sky_survey_analysis/synthdata_ballet_metrics.png", 
     width = 5, height = 5, units = 'in', res = 300)
 ballet_metrics %>% 
   pivot_longer(c(sensitivity, specificity), 
@@ -238,8 +238,6 @@ bounds <- credible_ball_bounds_active_inactive(X, data$pe, clustering_samps)
 data$lb <- bounds$lower
 data$ub <- bounds$upper
 
-png("output/sky_survey_analysis/ballet_best_performance.png", 
-    width = 15, height = 5, units = 'in', res = 300)
 enriched_data_lb <- enrich_small_clusters(data, 'lb', size_lb = 25)
 p1 <- ggplot() + 
   geom_point(aes(x = x, y = y, color = factor(lb)), 
@@ -276,9 +274,16 @@ p3 <- ggplot() +
   labs(title = "97.5%-ile Upper Bound",
        subtitle = sprintf("minPts: %d, spep: %.2f, sensitivity: %.2f, specificity: %.2f", minPts, split_err_prob, sensitivity(X, data$ub, mu), specificity(X, data$ub, mu)),
        x = NULL, y = NULL)
-grid.arrange(p1, p2, p3, nrow = 1)
+
+png("output/sky_survey_analysis/synthdata_ballet_pe.png", 
+    width = 5, height = 5, units = 'in', res = 300)
+p2
 dev.off()
 
+png("output/sky_survey_analysis/synthdata_ballet_bounds.png", 
+    width = 10, height = 5, units = 'in', res = 300)
+grid.arrange(p1, p3, nrow = 1)
+dev.off()
 
 # ----------------------------------------
 # Find the DBSCAN clusters
@@ -314,7 +319,7 @@ for(minPts in minPts_options){
 # Pick the best minPts based on dbscan_metrics
 minPts <- minPts_options[which.max(dbscan_metrics$sensitivity + 
                                      dbscan_metrics$specificity)]
-png("output/sky_survey_analysis/dbscan_metrics.png", 
+png("output/sky_survey_analysis/synthdata_dbscan_metrics.png", 
     width = 5, height = 5, units = 'in', res = 300)
 dbscan_metrics %>% 
   pivot_longer(c(sensitivity, specificity), 
@@ -355,7 +360,7 @@ eps_ballet <- minPts_NN_dists[round(napprox*(1 - target_quantile))]
 dbfit <- dbscan(X, eps = eps_ballet, minPts = minPts_ballet, borderPoints = FALSE)
 data$dbscan_bmp <- dbfit$cluster
 
-png("output/sky_survey_analysis/dbscan_best_performance.png", 
+png("output/sky_survey_analysis/synthdata_dbscan_best.png", 
     width = 5, height = 5, units = 'in', res = 300)
 enriched_data <- enrich_small_clusters(data, 'dbscan_best', size_lb = 25)
 ggplot() + 
@@ -374,7 +379,7 @@ ggplot() +
        x = NULL, y = NULL)
 dev.off()
 
-png("output/sky_survey_analysis/dbscan_ballet_minpts.png", 
+png("output/sky_survey_analysis/synthdata_dbscan_heuristic.png", 
     width = 5, height = 5, units = 'in', res = 300)
 enriched_data <- enrich_small_clusters(data, 'dbscan_bmp', size_lb = 25)
 ggplot() + 

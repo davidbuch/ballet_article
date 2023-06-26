@@ -167,13 +167,13 @@ p3 <- ggplot() +
        subtitle = sprintf("minPts: %d, spep: %.2f", minPts, split_err_prob),
        x = NULL, y = NULL)
 
-png("output/sky_survey_analysis/edsgc_clustering.png", 
-    width = 15, height = 5, units = 'in', res = 300)
+png("output/sky_survey_analysis/edsgc_ballet_pe.png", 
+    width = 5, height = 5, units = 'in', res = 300)
 print(p2)
 dev.off()
 
-png("output/sky_survey_analysis/edsgc_bounds.png", 
-    width = 15, height = 5, units = 'in', res = 300)
+png("output/sky_survey_analysis/edsgc_ballet_bounds.png", 
+    width = 10, height = 5, units = 'in', res = 300)
 print(grid.arrange(p1, p3, nrow = 1))
 dev.off()
 
@@ -198,7 +198,7 @@ dbfit <- dbscan(X, eps = eps, minPts = minPts, borderPoints = FALSE)
 data$dbscan <- dbfit$cluster
 
 
-png("output/sky_survey_analysis/edsgc_dbscan.png", 
+png("output/sky_survey_analysis/edsgc_dbscan_heuristic.png", 
     width = 5, height = 5, units = 'in', res = 300)
 enriched_data <- enrich_small_clusters(data, 'dbscan', size_lb = 25)
 ggplot() + 
