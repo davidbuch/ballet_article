@@ -63,7 +63,7 @@ for(d in 1:length(toy_datasets)){
   
   # Get the Density-Based Cluster Allocations and Our Credible Bounds
   density_clustering_samps <- 
-    density_based_clusterer(x, fn_samps_obs[sample(nsims, 10),],
+    density_based_clusterer(x, fn_samps_obs,
                             minPts = ballet_params[[d]][['minPts']],
                             cut_quantile = ballet_params[[d]][['cut_quantile']], 
                             split_err_prob = ballet_params[[d]][['split_err_prob']])

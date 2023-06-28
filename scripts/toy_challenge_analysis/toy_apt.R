@@ -24,10 +24,10 @@ toy_datasets <- list(
 )
 
 ballet_params <- list(
-  two_moons = list(minPts = 5, cut_quantile = 0.08, split_err_prob = 0.01),
+  two_moons = list(minPts = 5, cut_quantile = 0.1, split_err_prob = 0.01),
   circles = list(minPts = 5, cut_quantile = 0.025, split_err_prob = 0.01),
   tsne = list(minPts = floor((nrow(tsne)/nrow(circles))*5), 
-              cut_quantile = 0.08, split_err_prob = 0.01)
+              cut_quantile = 0.08, split_err_prob = 0.001)
 )
 
 # This Loop Will Create dataframes for each dataset that contain a variety of 

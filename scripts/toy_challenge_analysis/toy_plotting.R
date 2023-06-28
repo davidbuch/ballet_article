@@ -294,11 +294,11 @@ grid.arrange(
                 "Lower Bound",
                 gp = gpar(fontface = 3, fontsize = 14)
               )),
-  arrangeGrob(pdc_ts, 
-              top = textGrob(
-                "Point Estimate",
-                gp = gpar(fontface = 3, fontsize = 14)
-              )),
+  # arrangeGrob(pdc_ts, 
+  #             top = textGrob(
+  #               "Point Estimate",
+  #               gp = gpar(fontface = 3, fontsize = 14)
+  #             )),
   arrangeGrob(pvu_ts,
               top = textGrob(
                 "Upper Bound",
@@ -306,7 +306,7 @@ grid.arrange(
               )),
   top = textGrob("BaLlet Clustering - Credible Bounds", 
                  gp = gpar(fontsize = 18)),
-  ncol = 3
+  ncol = 2
 )
 dev.off()
 
@@ -326,6 +326,10 @@ plot_obs_ts_apt <- prep_labels(readRDS("output/toy_challenge/plot_obs_apt_tsne.r
 plot_obs_ts_nndm <- prep_labels(readRDS("output/toy_challenge/plot_obs_nndm_tsne.rds"))
 plot_obs_nc_apt <- prep_labels(readRDS("output/toy_challenge/plot_obs_apt_circles.rds"))
 plot_obs_nc_nndm<- prep_labels(readRDS("output/toy_challenge/plot_obs_nndm_circles.rds"))
+
+plot_obs_ts <- readRDS("output/toy_challenge/plot_obs_dpmm_tsne2.rds")
+plot_obs_ts <- prep_labels(plot_obs_ts)
+
 
 # Density Estimate Plots (there should be 9 of them)
 pf_tm_dpmm <- ggplot(plot_grid_tm) +   
