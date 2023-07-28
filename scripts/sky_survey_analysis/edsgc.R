@@ -24,6 +24,19 @@ abell <- read.csv("data/intermediate_data/abell_clusters.csv")
 clusters <- rbind(data.frame(edcci, catalogue = "EDCCI"),
                   data.frame(abell, catalogue = "Abell"))
 
+png("output/sky_survey_analysis/edsgc_data.png", 
+    width = 5, height = 5, units = 'in', res = 300)
+ggplot() +
+  geom_point(aes(x = x, y = y), alpha = 0.2, size = 0.1, color = "grey50", data = data) +
+  geom_point(aes(x = x, y = y, shape = catalogue), size = 2, data = clusters) +
+  scale_shape_manual(name = "Cluster\nCatalogue",
+                     labels = c("EDCCI", "Abell"),
+                     values = c(4,3)) +
+  guides(fill = 'none') + 
+  labs(title = "EDSGC Galaxies and Cluster Catalogue", 
+       x = NULL, y = NULL)
+dev.off()
+
 # ----------------------------------------
 # Fit the Random Histogram Model
 # ----------------------------------------
