@@ -137,7 +137,7 @@ for(s in 1:nsamps){
 close(pb)
 
 # ----------------------------------------
-# Find the BaLlet clusters
+# Find the BALLET clusters
 # ----------------------------------------
 # target quantile is scientifically motivated
 target_quantile <- 0.9
@@ -209,10 +209,10 @@ ballet_metrics %>%
   geom_line(aes(x = minPts, y = score, color = metric)) + 
   geom_vline(xintercept = minPts, color = 'red') +
   ylim(0,1) + 
-  labs(title = "BaLlet Performance")
+  labs(title = "BALLET Performance")
 dev.off()
 
-# There's seemingly no improvement in BaLlet from scanning over minPts,
+# There's seemingly no improvement in BALLET from scanning over minPts,
 # so stick with the default from the heuristic
 minPts <- round(points_per_cluster / 4)
 
@@ -288,7 +288,7 @@ dev.off()
 # ----------------------------------------
 # Find the DBSCAN clusters
 # ----------------------------------------
-minPts_ballet <- minPts # save the value of minPts we were using for BaLlet
+minPts_ballet <- minPts # save the value of minPts we were using for BALLET
 napprox <- 1000 # find epsilon based on an approximation of the full data
 minPts_options <- seq(10, 100, 10)
 tX <- t(X) # convenient to have this for operation broadcasting computations 

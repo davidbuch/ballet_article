@@ -63,14 +63,15 @@ pf_ts <- ggplot(plot_grid_ts) +
 pmc_tm <- ggplot(plot_obs_tm) + 
   geom_point(aes(x = x, y = y, color = mm_pe), size = 0.5) + 
   stat_ellipse(aes(x = x, y = y, group = mm_pe)) + 
-  scale_color_manual(values = color_vals_tm) +
+  scale_color_manual(na.value = "black", values = color_vals_tm) +
   guides(color = 'none') +
   theme(plot.title = element_text(size=9)) +
   labs(title = ktitle(plot_obs_tm$mm_pe), x = NULL, y = NULL)
+
 pmc_ts <- ggplot(plot_obs_ts) + 
   geom_point(aes(x = x, y = y, color = mm_pe), size = 0.25) + 
   stat_ellipse(aes(x = x, y = y, group = mm_pe)) + 
-  scale_color_manual(values = color_vals_ts) +
+  scale_color_manual(na.value = "black", values = color_vals_ts) +
   guides(color = 'none') + 
   theme(plot.title = element_text(size=9)) +
   labs(title = ktitle(plot_obs_ts$mm_pe), x = NULL, y = NULL)
@@ -81,10 +82,11 @@ pdc_tm <- ggplot() +
   geom_contour(aes(x = x, y = y, z = f_pe), 
                breaks = 0.09, col = 'black',
                data = plot_grid_tm) + 
-  scale_color_manual(values = color_vals_tm) +
+  scale_color_manual(na.value = "black", values = color_vals_tm) +
   guides(color = 'none') + 
   theme(plot.title = element_text(size=9)) +
   labs(title = ktitle(plot_obs_tm$db_pe), x = NULL, y = NULL)
+
 pdc_ts <- ggplot() + 
   geom_point(aes(x = x, y = y, color = db_pe), 
              size = 0.25, data = plot_obs_ts) + 
@@ -94,7 +96,7 @@ pdc_ts <- ggplot() +
     radius = 1e-2,
     concavity = 2,
     data = plot_obs_ts %>% filter(db_pe != 0)) +
-  scale_color_manual(values = color_vals_ts) +
+  scale_color_manual(na.value = "black", values = color_vals_ts) +
   guides(color = 'none') + 
   theme(plot.title = element_text(size=9)) +
   labs(title = ktitle(plot_obs_ts$db_pe), x = NULL, y = NULL)
@@ -114,7 +116,7 @@ grid.arrange(
               )),
   arrangeGrob(pdc_tm, pdc_ts,
               top = textGrob(
-                "BaLlet",
+                "BALLET",
                 gp = gpar(fontface = 3, fontsize = 14)
               )),
   top = textGrob("Clustering Point Estimates - DPMM", 
@@ -128,14 +130,14 @@ dev.off()
 pvl_tm <- ggplot(plot_obs_tm) + 
   geom_point(aes(x = x, y = y, color = mm_vl_wg), size = 0.5) + 
   stat_ellipse(aes(x = x, y = y, group = mm_vl_wg)) + 
-  scale_color_manual(values = color_vals_tm) +
+  scale_color_manual(na.value = "black", values = color_vals_tm) +
   guides(color = 'none') + 
   theme(plot.title = element_text(size=9)) +
   labs(title = ktitle(plot_obs_tm$mm_vl_wg), x = NULL, y = NULL)
 pvl_ts <- ggplot(plot_obs_ts) + 
   geom_point(aes(x = x, y = y, color = mm_vl_wg), size = 0.25) + 
   stat_ellipse(aes(x = x, y = y, group = mm_vl_wg)) + 
-  scale_color_manual(values = color_vals_ts) +
+  scale_color_manual(na.value = "black", values = color_vals_ts) +
   guides(color = 'none') + 
   theme(plot.title = element_text(size=9)) +
   labs(title = ktitle(plot_obs_ts$mm_vl_wg), x = NULL, y = NULL)
@@ -143,14 +145,14 @@ pvl_ts <- ggplot(plot_obs_ts) +
 pvu_tm <- ggplot(plot_obs_tm) + 
   geom_point(aes(x = x, y = y, color = mm_vu_wg), size = 0.5) + 
   stat_ellipse(aes(x = x, y = y, group = mm_vu_wg)) + 
-  scale_color_manual(values = color_vals_tm) +
+  scale_color_manual(na.value = "black", values = color_vals_tm) +
   guides(color = 'none') + 
   theme(plot.title = element_text(size=9)) +
   labs(title = ktitle(plot_obs_tm$mm_vu_wg), x = NULL, y = NULL)
 pvu_ts <- ggplot(plot_obs_ts) + 
   geom_point(aes(x = x, y = y, color = mm_vu_wg), size = 0.25) + 
   stat_ellipse(aes(x = x, y = y, group = mm_vu_wg)) + 
-  scale_color_manual(values = color_vals_ts) +
+  scale_color_manual(na.value = "black", values = color_vals_ts) +
   guides(color = 'none') + 
   theme(plot.title = element_text(size=9)) +
   labs(title = ktitle(plot_obs_ts$mm_vu_wg), x = NULL, y = NULL)
@@ -184,14 +186,14 @@ dev.off()
 pvl_tm <- ggplot(plot_obs_tm) + 
   geom_point(aes(x = x, y = y, color = mm_vl), size = 0.5) + 
   stat_ellipse(aes(x = x, y = y, group = mm_vl)) + 
-  scale_color_manual(values = color_vals_tm) +
+  scale_color_manual(na.value = "black", values = color_vals_tm) +
   guides(color = 'none') + 
   theme(plot.title = element_text(size=9)) +
   labs(title = ktitle(plot_obs_tm$mm_vl), x = NULL, y = NULL)
 pvl_ts <- ggplot(plot_obs_ts) + 
   geom_point(aes(x = x, y = y, color = mm_vl), size = 0.25) + 
   stat_ellipse(aes(x = x, y = y, group = mm_vl)) + 
-  scale_color_manual(values = color_vals_ts) +
+  scale_color_manual(na.value = "black", values = color_vals_ts) +
   guides(color = 'none') + 
   theme(plot.title = element_text(size=9)) +
   labs(title = ktitle(plot_obs_ts$mm_vl), x = NULL, y = NULL)
@@ -199,14 +201,14 @@ pvl_ts <- ggplot(plot_obs_ts) +
 pvu_tm <- ggplot(plot_obs_tm) + 
   geom_point(aes(x = x, y = y, color = mm_vu), size = 0.5) + 
   stat_ellipse(aes(x = x, y = y, group = mm_vu)) + 
-  scale_color_manual(values = color_vals_tm) +
+  scale_color_manual(na.value = "black", values = color_vals_tm) +
   guides(color = 'none') + 
   theme(plot.title = element_text(size=9)) +
   labs(title = ktitle(plot_obs_tm$mm_vu), x = NULL, y = NULL)
 pvu_ts <- ggplot(plot_obs_ts) + 
   geom_point(aes(x = x, y = y, color = mm_vu), size = 0.25) + 
   stat_ellipse(aes(x = x, y = y, group = mm_vu)) + 
-  scale_color_manual(values = color_vals_ts) +
+  scale_color_manual(na.value = "black", values = color_vals_ts) +
   guides(color = 'none') + 
   theme(plot.title = element_text(size=9)) +
   labs(title = ktitle(plot_obs_ts$mm_vu), x = NULL, y = NULL)
@@ -243,7 +245,7 @@ pvl_tm <- ggplot() +
   geom_contour(aes(x = x, y = y, z = f_pe), 
                breaks = 0.09, col = 'black',
                data = plot_grid_tm) + 
-  scale_color_manual(values = color_vals_tm) +
+  scale_color_manual(na.value = "black", values = color_vals_tm) +
   guides(color = 'none') + 
   theme(plot.title = element_text(size=9)) +
   labs(title = ktitle(plot_obs_tm$db_vl), x = NULL, y = NULL)
@@ -257,7 +259,7 @@ pvl_ts <- ggplot() +
     radius = 1e-2,
     concavity = 2,
     data = plot_obs_ts %>% filter(db_vl != 0)) +
-  scale_color_manual(values = color_vals_ts) + 
+  scale_color_manual(na.value = "black", values = color_vals_ts) + 
   guides(color = 'none') + 
   theme(plot.title = element_text(size=9)) +
   labs(title = ktitle(plot_obs_ts$db_vl), x = NULL, y = NULL)
@@ -268,10 +270,11 @@ pvu_tm <- ggplot() +
   geom_contour(aes(x = x, y = y, z = f_pe), 
                breaks = 0.09, col = 'black',
                data = plot_grid_tm) +
-  scale_color_manual(values = color_vals_tm) + 
+  scale_color_manual(na.value = "black", values = color_vals_tm) + 
   guides(color = 'none') + 
   theme(plot.title = element_text(size=9)) +
   labs(title = ktitle(plot_obs_tm$db_vu), x = NULL, y = NULL)
+
 pvu_ts <- ggplot() + 
   geom_point(aes(x = x, y = y, color = db_vu), 
              size = 0.25, data = plot_obs_ts) + 
@@ -281,7 +284,7 @@ pvu_ts <- ggplot() +
     radius = 1e-2,
     concavity = 2,
     data = plot_obs_ts %>% filter(db_vu != 0)) +
-  scale_color_manual(values = color_vals_ts) + 
+  scale_color_manual(na.value = "black", values = color_vals_ts) + 
   guides(color = 'none') + 
   theme(plot.title = element_text(size=9)) +
   labs(title = ktitle(plot_obs_ts$db_vu), x = NULL, y = NULL)
@@ -304,7 +307,7 @@ grid.arrange(
                 "Upper Bound",
                 gp = gpar(fontface = 3, fontsize = 14)
               )),
-  top = textGrob("BaLlet Clustering - Credible Bounds", 
+  top = textGrob("BALLET Clustering - Credible Bounds", 
                  gp = gpar(fontsize = 18)),
   ncol = 2
 )
@@ -409,7 +412,7 @@ pdc_tm_dpmm <- ggplot() +
                breaks = quantile(plot_obs_tm$f_pe, 0.125), 
                col = 'black',
                data = plot_grid_tm) + 
-  scale_color_manual(values = color_vals_tm) +
+  scale_color_manual(na.value = "black", values = color_vals_tm) +
   guides(color = 'none') + 
   theme(plot.title = element_text(size=9)) +
   labs(title = ktitle(plot_obs_tm$db_pe), x = NULL, y = NULL)
@@ -421,7 +424,7 @@ pdc_nc_dpmm <- ggplot() +
                breaks = quantile(plot_obs_nc$f_pe, 0.02),
                col = 'black',
                data = plot_grid_nc) + 
-  scale_color_manual(values = color_vals_nc) +
+  scale_color_manual(na.value = "black", values = color_vals_nc) +
   guides(color = 'none') + 
   theme(plot.title = element_text(size=9)) +
   labs(title = ktitle(plot_obs_nc$db_pe), x = NULL, y = NULL)
@@ -435,7 +438,7 @@ pdc_ts_dpmm <- ggplot() +
     radius = 1e-2,
     concavity = 2,
     data = plot_obs_ts %>% filter(db_pe != 0)) +
-  scale_color_manual(values = color_vals_ts) +
+  scale_color_manual(na.value = "black", values = color_vals_ts) +
   guides(color = 'none') + 
   theme(plot.title = element_text(size=9)) +
   labs(title = ktitle(plot_obs_ts$db_pe), x = NULL, y = NULL)
@@ -447,7 +450,7 @@ pdc_tm_apt <- ggplot() +
                breaks = quantile(plot_obs_tm_apt$f_pe, 0.08), 
                col = 'black',
                data = plot_grid_tm_apt) + 
-  scale_color_manual(values = color_vals_tm) +
+  scale_color_manual(na.value = "black", values = color_vals_tm) +
   guides(color = 'none') + 
   theme(plot.title = element_text(size=9)) +
   labs(title = ktitle(plot_obs_tm_apt$db_pe), x = NULL, y = NULL)
@@ -459,7 +462,7 @@ pdc_nc_apt <- ggplot() +
                breaks = quantile(plot_obs_nc_apt$f_pe, 0.02),
                col = 'black',
                data = plot_grid_nc_apt) + 
-  scale_color_manual(values = color_vals_nc) +
+  scale_color_manual(na.value = "black", values = color_vals_nc) +
   guides(color = 'none') + 
   theme(plot.title = element_text(size=9)) +
   labs(title = ktitle(plot_obs_nc_apt$db_pe), x = NULL, y = NULL)
@@ -473,7 +476,7 @@ pdc_ts_apt <- ggplot() +
     radius = 1e-2,
     concavity = 2,
     data = plot_obs_ts_apt %>% filter(db_pe != 0)) +
-  scale_color_manual(values = color_vals_ts) +
+  scale_color_manual(na.value = "black", values = color_vals_ts) +
   guides(color = 'none') + 
   theme(plot.title = element_text(size=9)) +
   labs(title = ktitle(plot_obs_ts_apt$db_pe), x = NULL, y = NULL)
@@ -485,7 +488,7 @@ pdc_tm_nndm <- ggplot() +
                breaks = quantile(plot_obs_tm_nndm$f_pe, 0.08),
                col = 'black',
                data = plot_grid_tm_nndm) + 
-  scale_color_manual(values = color_vals_tm) +
+  scale_color_manual(na.value = "black", values = color_vals_tm) +
   guides(color = 'none') + 
   theme(plot.title = element_text(size=9)) +
   labs(title = ktitle(plot_obs_tm_nndm$db_pe), x = NULL, y = NULL)
@@ -497,7 +500,7 @@ pdc_nc_nndm <- ggplot() +
                breaks = quantile(plot_obs_nc_nndm$f_pe, 0.02),
                col = 'black',
                data = plot_grid_nc_nndm) + 
-  scale_color_manual(values = color_vals_nc) +
+  scale_color_manual(na.value = "black", values = color_vals_nc) +
   guides(color = 'none') + 
   theme(plot.title = element_text(size=9)) +
   labs(title = ktitle(plot_obs_nc_nndm$db_pe), x = NULL, y = NULL)
@@ -511,23 +514,10 @@ pdc_ts_nndm <- ggplot() +
     radius = 1e-2,
     concavity = 2,
     data = plot_obs_ts_nndm %>% filter(db_pe != 0)) +
-  scale_color_manual(values = color_vals_ts) +
+  scale_color_manual(na.value = "black", values = color_vals_ts) +
   guides(color = 'none') + 
   theme(plot.title = element_text(size=9)) +
   labs(title = ktitle(plot_obs_ts_nndm$db_pe), x = NULL, y = NULL)
-
-# pdc_ts_nndm <- ggplot() + 
-#   geom_point(aes(x = x, y = y, color = db_pe), 
-#              size = 0.5, data = plot_obs_ts_nndm) + 
-#   geom_contour(aes(x = x, y = y, z = f_pe), 
-#                breaks = quantile(plot_obs_ts_nndm$f_pe, 0.05),
-#                col = 'black',
-#                data = plot_grid_ts_nndm) + 
-#   scale_color_manual(values = color_vals_tm) +
-#   guides(color = 'none') + 
-#   theme(plot.title = element_text(size=9)) +
-#   labs(title = ktitle(plot_obs_ts_nndm$db_pe), x = NULL, y = NULL)
-
 
 png("output/toy_challenge/compare_ballet_clusterings.png", 
     width = 12, height = 8, units = 'in', res = 300)
@@ -547,7 +537,7 @@ grid.arrange(
                 "NN Dirichlet Mixture",
                 gp = gpar(fontface = 3, fontsize = 14)
               )),
-  top = textGrob("BaLlet Clustering Point Estimates", 
+  top = textGrob("BALLET Clustering Point Estimates", 
                  gp = gpar(fontsize = 18)),
   ncol = 3
 )
