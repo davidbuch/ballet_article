@@ -4,13 +4,13 @@
 library(tidyverse)
 dir.create('data/intermediate_data', recursive = TRUE, showWarnings = FALSE)
 
-galaxy_data <- read.table("data/raw_data/from_wj/edsgc.dat", skip = 1) %>% 
+galaxy_data <- read.table("data/raw_data/edsgc.dat", skip = 1) %>% 
   dplyr::rename(x = V3, y = V4) %>% 
   select(x,y)
-abell_clusters <- read.table("data/raw_data/from_wj/abell.dat", skip = 9) %>% 
+abell_clusters <- read.table("data/raw_data/abell.dat", skip = 9) %>% 
   dplyr::rename(x = V2, y = V3) %>%
   select(x,y)
-edcci_clusters <- read.table("data/raw_data/from_wj/edcci.dat") %>%
+edcci_clusters <- read.table("data/raw_data/edcci.dat") %>%
   dplyr::rename(x = V2, y = V3) %>%
   select(x,y)
 
