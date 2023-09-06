@@ -52,45 +52,6 @@ credible_bounds <- function(pe,
   return(credible_bounds)
 }
 
-# credible_bounds_active_inactive <- function(
-#     x,
-#     clustering_samps,
-#     coverage_prob = 0.95,
-#     color_map = function(x) ifelse(x == 0, 0, 1),
-#     color_set = unique(
-#       color_map(0:ncol(clustering_samps))
-#     ),
-#     sep_loss = 1,
-#     join_loss = 1,
-#     miscolor_loss = 1/4){
-#   
-#   N <- ncol(clustering_samps)
-#   active_probabilities <- colMeans(clustering_samps != 0)
-#   
-#   sel_active_ub <- active_probabilities > (1 - coverage_prob) / 2
-#   active_ub <- rep(0, N)
-#   active_ub[sel_active_ub] <- x[sel_active_ub,] %>%
-#     dist() %>%
-#     hclust(method = "single") %>%
-#     cutree(h = attr(clustering_samps, 'delta'))
-#   
-#   
-#   sel_active_lb <- active_probabilities > 1 - ((1 - coverage_prob) / 2)
-#   active_lb <- rep(0,N)
-#   active_lb[sel_active_lb] <- x[sel_active_lb,] %>%
-#     dist() %>%
-#     hclust(method = "single") %>%
-#     cutree(h = attr(clustering_samps, 'delta'))
-#   
-#   credible_bounds <- list(
-#     lower = active_lb,
-#     upper = active_ub
-#   )
-#   
-#   return(credible_bounds)
-# }
-
-
 credible_ball_bounds_active_inactive <- function(
     x, 
     pe, 

@@ -2,19 +2,19 @@ sensitivity <- function(X, labels, target_locs){
   K <- nrow(target_locs)
   non_noise_labels <- setdiff(unique(labels),0)
   
-  mu_in_hull <- rep(0, K)
+  target_in_some_hull <- rep(0, K)
   for(k in 1:K){
     for(kpe in non_noise_labels){
       if(sum(labels == kpe) < 3) next
       ch <- geometry::convhulln(X[labels == kpe,,drop=FALSE])
       status <- geometry::inhulln(ch, target_locs[k,,drop=FALSE])
       if(status){
-        mu_in_hull[k] <- 1
+        target_in_some_hull[k] <- 1
         break
       }
     }
   }
-  mean(mu_in_hull)
+  mean(target_in_some_hull)
 }
 
 enrich_small_clusters <- function(df, label_col, size_lb = 20, ntimes = 50){

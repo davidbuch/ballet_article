@@ -1,4 +1,7 @@
 fn_from_apt <- function(res, xvals, max.resol){
+  #' "res" is the Adaptive Polya Tree Fit from Li Ma's PPT package
+  #' 
+  
   nobs <- nrow(xvals)
   obsdim <- ncol(xvals)
   nsims <- length(res$part_points_post_samples)
