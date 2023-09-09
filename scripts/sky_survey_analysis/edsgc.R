@@ -33,7 +33,7 @@ ggplot() +
                      labels = c("EDCCI", "Abell"),
                      values = c(4,3)) +
   guides(fill = 'none') + 
-  labs(title = "EDSGC Galaxies and Cluster Catalogue", 
+  labs(title = "EDSGC Galaxies and Catalogue Locations", 
        x = NULL, y = NULL)
 dev.off()
 
@@ -99,7 +99,7 @@ for(s in 1:nsamps){
 close(pb)
 
 # ----------------------------------------
-# Find the BAND clusters
+# Find the BALLET clusters
 # ----------------------------------------
 # target quantile is scientifically motivated
 target_quantile <- 0.9
@@ -139,7 +139,7 @@ p1 <- ggplot() +
   geom_point(aes(x = x, y = y, color = factor(lb)), 
              size = 0.1, data = data %>% filter(lb != 0)) + 
   geom_point(aes(x = x, y = y), 
-             size = 0.1, alpha = 0.1, color = 'grey', 
+             size = 0.1, alpha = 0.2, color = 'black', 
              data = data %>% filter(lb == 0)) +
   stat_ellipse(aes(x = x, y = y, group = factor(lb)), 
                data = enriched_data_lb %>% filter(lb != 0)) +
@@ -148,35 +148,35 @@ p1 <- ggplot() +
                      labels = c("EDCCI", "Abell"),
                      values = c(4,3)) + 
   guides(color = 'none') + 
-  labs(title = "2.5%-ile Lower Bound",
+  labs(title = "BALLET 2.5%-ile Lower Bound",
        subtitle = sprintf("minPts: %d, spep: %.2f", minPts, split_err_prob),
        x = NULL, y = NULL)
 
 enriched_data_pe <- enrich_small_clusters(data, 'pe', size_lb = 25)
 p2 <- ggplot() + 
   geom_point(aes(x = x, y = y, color = factor(pe)), size = 0.1, data = data %>% filter(pe != 0)) + 
-  geom_point(aes(x = x, y = y), size = 0.1, alpha = 0.1, color = 'grey', data = data %>% filter(pe == 0)) +
+  geom_point(aes(x = x, y = y), size = 0.1, alpha = 0.2, color = 'black', data = data %>% filter(pe == 0)) +
   stat_ellipse(aes(x = x, y = y, group = factor(pe)), data = enriched_data_pe %>% filter(pe != 0)) +
   geom_point(aes(x = x, y = y, shape = catalogue), size = 2, data = clusters) +
   scale_shape_manual(name = "Cluster\nCatalogue",
                      labels = c("EDCCI", "Abell"),
                      values = c(4,3)) + 
   guides(color = 'none') + 
-  labs(title = "Point Estimate",
+  labs(title = "BALLET Estimated Clusters and Catalogue Locations",
        subtitle = sprintf("minPts: %d, spep: %.2f", minPts, split_err_prob),
        x = NULL, y = NULL)
 
 enriched_data_ub <- enrich_small_clusters(data, 'ub', size_lb = 25)
 p3 <- ggplot() + 
   geom_point(aes(x = x, y = y, color = factor(ub)), size = 0.1, data = data %>% filter(ub != 0)) + 
-  geom_point(aes(x = x, y = y), size = 0.1, alpha = 0.1, color = 'grey', data = data %>% filter(ub == 0)) +
+  geom_point(aes(x = x, y = y), size = 0.1, alpha = 0.2, color = 'black', data = data %>% filter(ub == 0)) +
   stat_ellipse(aes(x = x, y = y, group = factor(ub)), data = enriched_data_ub %>% filter(ub != 0)) +
   geom_point(aes(x = x, y = y, shape = catalogue), size = 2, data = clusters) +
   scale_shape_manual(name = "Cluster\nCatalogue",
                      labels = c("EDCCI", "Abell"),
                      values = c(4,3)) +
   guides(color = 'none') + 
-  labs(title = "97.5%-ile Upper Bound",
+  labs(title = "BALLET 97.5%-ile Upper Bound",
        subtitle = sprintf("minPts: %d, spep: %.2f", minPts, split_err_prob),
        x = NULL, y = NULL)
 
@@ -193,7 +193,7 @@ dev.off()
 # ----------------------------------------
 # Find the DBSCAN clusters
 # ----------------------------------------
-# We will use the same minPts as we did for BAND
+# We will use the same minPts as we did for BALLET
 tX <- t(X)
 napprox <- 1000 # find epsilon based on an approximation of the full data
 minPts_NN_dists <- c()
@@ -218,7 +218,7 @@ ggplot() +
   geom_point(aes(x = x, y = y, color = factor(dbscan)), 
              size = 0.1, data = data %>% filter(dbscan != 0)) + 
   geom_point(aes(x = x, y = y), 
-             size = 0.1, alpha = 0.1, color = 'grey', 
+             size = 0.1, alpha = 0.2, color = 'black', 
              data = data %>% filter(dbscan == 0)) +
   stat_ellipse(aes(x = x, y = y, group = factor(dbscan)), 
                data = enriched_data %>% filter(dbscan != 0)) +
@@ -227,7 +227,7 @@ ggplot() +
                      labels = c("EDCCI", "Abell"),
                      values = c(4,3)) +
   guides(color = 'none') + 
-  labs(title = "DBSCAN Estimated Clusters and True Locations",
+  labs(title = "DBSCAN Estimated Clusters and Catalogue Locations",
        subtitle = sprintf("minPts: %d, eps: %.2e", minPts, eps),
        x = NULL, y = NULL)
 dev.off()
@@ -263,7 +263,7 @@ ggplot() +
   geom_point(aes(x = x, y = y, color = factor(dbscan_60)), 
              size = 0.1, data = data %>% filter(dbscan_60 != 0)) + 
   geom_point(aes(x = x, y = y), 
-             size = 0.1, alpha = 0.1, color = 'grey', 
+             size = 0.1, alpha = 0.2, color = 'black', 
              data = data %>% filter(dbscan_60 == 0)) +
   stat_ellipse(aes(x = x, y = y, group = factor(dbscan_60)), 
                data = enriched_data %>% filter(dbscan_60 != 0)) +
@@ -272,7 +272,7 @@ ggplot() +
                      labels = c("EDCCI", "Abell"),
                      values = c(4,3)) +
   guides(color = 'none') + 
-  labs(title = "DBSCAN Estimated Clusters and True Locations",
+  labs(title = "DBSCAN Estimated Clusters and Catalogue Locations",
        subtitle = sprintf("minPts: %d, eps: %.2e", minPts, eps),
        x = NULL, y = NULL)
 dev.off()
@@ -283,9 +283,9 @@ abell <- as.matrix(abell)
 test_results <- data.frame(
   type = c("DBSCAN_60",
            "DBSCAN",
-           "BAND_LB",
-           "BAND_PE",
-           "BAND_UB"
+           "BALLET_LB",
+           "BALLET_PE",
+           "BALLET_UB"
   ),
   sensitivity_edcci = c(
     sensitivity(X, data$dbscan_60, edcci),

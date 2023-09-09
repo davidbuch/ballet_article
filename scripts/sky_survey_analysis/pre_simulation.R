@@ -58,11 +58,11 @@ png("output/sky_survey_analysis/synthdata_data.png",
     width = 5, height = 5, units = 'in', res = 300)
 ggplot() +
   geom_point(data = data %>% filter(z == '0'),
-             aes(x = x, y = y), color = 'grey', alpha = 0.5, size = 0.1) +
+             aes(x = x, y = y), color = 'black', alpha = 0.2, size = 0.1) +
   geom_point(data = data %>% filter(z != '0'),
              aes(x = x, y = y, color = z), size = 0.1) +
   geom_point(aes(x = mu[,1], y = mu[,2]),
-             size = 2, color = 'black', shape = 4) +
+             size = 3, color = 'black', shape = 4) +
   guides(color = 'none') +
   labs(title = "Simulated Sky Survey Data",
        x = NULL, y = NULL)
@@ -114,11 +114,11 @@ shared_breaks <- quantile(log(c(plot_grid$f_pe, plot_grid$f_true)),
                           prob = c(0,seq(0.875,1,0.025)), names = FALSE)
 p1 <- ggplot() + 
   geom_contour_filled(aes(x = x, y = y, z = log(f_pe)), breaks = shared_breaks, data = plot_grid) + 
-  geom_point(aes(x = mu[,1], y = mu[,2]), shape = 4, size = 2) + 
+  geom_point(aes(x = mu[,1], y = mu[,2]), shape = 4, size = 3) + 
   guides(fill = 'none') + labs(title = "Log of Posterior Expected Density")
 p2 <- ggplot() + 
   geom_contour_filled(aes(x = x, y = y, z = log(f_true)), breaks = shared_breaks, data = plot_grid) + 
-  geom_point(aes(x = mu[,1], y = mu[,2]), shape = 4, size = 2) + 
+  geom_point(aes(x = mu[,1], y = mu[,2]), shape = 4, size = 3) + 
   guides(fill = 'none') + labs(title = "Log of True Density")
 grid.arrange(p1, p2, nrow = 1)
 dev.off()
@@ -243,11 +243,11 @@ p1 <- ggplot() +
   geom_point(aes(x = x, y = y, color = factor(lb)), 
              size = 0.1, data = data %>% filter(lb != 0)) + 
   geom_point(aes(x = x, y = y), 
-             size = 0.1, alpha = 0.1, color = 'grey', 
+             size = 0.1, alpha = 0.2, color = 'black', 
              data = data %>% filter(lb == 0)) +
   stat_ellipse(aes(x = x, y = y, group = factor(lb)), 
                data = enriched_data_lb %>% filter(lb != 0)) +
-  geom_point(aes(x = X1, y = X2), shape = 4, size = 2, data = data.frame(mu)) + 
+  geom_point(aes(x = X1, y = X2), shape = 4, size = 3, data = data.frame(mu)) + 
   guides(color = 'none') + 
   labs(title = "2.5%-ile Lower Bound",
        subtitle = sprintf("minPts: %d, spep: %.2f, sensitivity: %.2f, specificity: %.2f", minPts, split_err_prob, sensitivity(X, data$lb, mu), specificity(X, data$lb, mu)),
@@ -256,9 +256,9 @@ p1 <- ggplot() +
 enriched_data_pe <- enrich_small_clusters(data, 'pe', size_lb = 25)
 p2 <- ggplot() + 
   geom_point(aes(x = x, y = y, color = factor(pe)), size = 0.1, data = data %>% filter(pe != 0)) + 
-  geom_point(aes(x = x, y = y), size = 0.1, alpha = 0.1, color = 'grey', data = data %>% filter(pe == 0)) +
+  geom_point(aes(x = x, y = y), size = 0.1, alpha = 0.2, color = 'black', data = data %>% filter(pe == 0)) +
   stat_ellipse(aes(x = x, y = y, group = factor(pe)), data = enriched_data_pe %>% filter(pe != 0)) +
-  geom_point(aes(x = X1, y = X2), shape = 4, size = 2, data = data.frame(mu)) + 
+  geom_point(aes(x = X1, y = X2), shape = 4, size = 3, data = data.frame(mu)) + 
   guides(color = 'none') + 
   labs(title = "Point Estimate",
        subtitle = sprintf("minPts: %d, spep: %.2f, sensitivity: %.2f, specificity: %.2f", minPts, split_err_prob, sensitivity(X, data$pe, mu), specificity(X, data$pe, mu)),
@@ -267,9 +267,9 @@ p2 <- ggplot() +
 enriched_data_ub <- enrich_small_clusters(data, 'ub', size_lb = 25)
 p3 <- ggplot() + 
   geom_point(aes(x = x, y = y, color = factor(ub)), size = 0.1, data = data %>% filter(ub != 0)) + 
-  geom_point(aes(x = x, y = y), size = 0.1, alpha = 0.1, color = 'grey', data = data %>% filter(ub == 0)) +
+  geom_point(aes(x = x, y = y), size = 0.1, alpha = 0.2, color = 'black', data = data %>% filter(ub == 0)) +
   stat_ellipse(aes(x = x, y = y, group = factor(ub)), data = enriched_data_ub %>% filter(ub != 0)) +
-  geom_point(aes(x = X1, y = X2), shape = 4, size = 2, data = data.frame(mu)) + 
+  geom_point(aes(x = X1, y = X2), shape = 4, size = 3, data = data.frame(mu)) + 
   guides(color = 'none') + 
   labs(title = "97.5%-ile Upper Bound",
        subtitle = sprintf("minPts: %d, spep: %.2f, sensitivity: %.2f, specificity: %.2f", minPts, split_err_prob, sensitivity(X, data$ub, mu), specificity(X, data$ub, mu)),
@@ -367,11 +367,11 @@ ggplot() +
   geom_point(aes(x = x, y = y, color = factor(dbscan_best)), 
              size = 0.1, data = data %>% filter(dbscan_best != 0)) + 
   geom_point(aes(x = x, y = y), 
-             size = 0.1, alpha = 0.1, color = 'grey', 
+             size = 0.1, alpha = 0.2, color = 'black', 
              data = data %>% filter(dbscan_best == 0)) +
   stat_ellipse(aes(x = x, y = y, group = factor(dbscan_best)), 
                data = enriched_data %>% filter(dbscan_best != 0)) +
-  geom_point(aes(x = X1, y = X2), shape = 4, size = 2, data = data.frame(mu)) + 
+  geom_point(aes(x = X1, y = X2), shape = 4, size = 3, data = data.frame(mu)) + 
   guides(color = 'none') + 
   labs(title = "DBSCAN Estimated Clusters and True Locations",
        subtitle = sprintf("minPts: %d, eps: %.2f, sensitivity: %.2f, specificity: %.2f", 
@@ -386,11 +386,11 @@ ggplot() +
   geom_point(aes(x = x, y = y, color = factor(dbscan_bmp)), 
              size = 0.1, data = data %>% filter(dbscan_bmp != 0)) + 
   geom_point(aes(x = x, y = y), 
-             size = 0.1, alpha = 0.1, color = 'grey', 
+             size = 0.1, alpha = 0.2, color = 'black', 
              data = data %>% filter(dbscan_bmp == 0)) +
   stat_ellipse(aes(x = x, y = y, group = factor(dbscan_bmp)), 
                data = enriched_data %>% filter(dbscan_bmp != 0)) +
-  geom_point(aes(x = X1, y = X2), shape = 4, size = 2, data = data.frame(mu)) + 
+  geom_point(aes(x = X1, y = X2), shape = 4, size = 3, data = data.frame(mu)) + 
   guides(color = 'none') + 
   labs(title = "DBSCAN Estimated Clusters and True Locations",
        subtitle = sprintf("minPts: %d, eps: %.2f, sensitivity: %.2f, specificity: %.2f", 
