@@ -1,7 +1,7 @@
 density_based_clusterer <- function(x, 
                                     fsamps,
                                     cut_quantile = 0.2, 
-                                    minPts = 5,
+                                    minPts = ceiling(log2(nrow(x))),
                                     split_err_prob = 0.01,
                                     lambda_delta,
                                     plot_dendro = FALSE)
@@ -55,8 +55,9 @@ density_based_clusterer <- function(x,
 compute_lambda_delta <- function(x,
                                  fsamps,
                                  cut_quantile = 0.2, 
-                                 minPts = 5,
-                                 split_err_prob = 0.01)
+                                 minPts = ceiling(log2(nrow(x))),
+                                 split_err_prob = 0.01,
+                                 dists=NULL)
 {
   N <- ifelse(is.null(dim(x)), length(x), dim(x)[1])
   D <- ifelse(is.null(dim(x)), 1, dim(x)[2])
@@ -98,10 +99,18 @@ compute_lambda_delta <- function(x,
   # # Compute the radius of a d-dimensional ball with volume V_D_delta
   # delta <- ( (V_D_delta*gamma(D/2 + 1))^(1/D) ) / sqrt(3.14159)
   
-  expectedCorePts <- x[Ef > lambda,]
-  coreDists <- as.matrix(dist(expectedCorePts))
-  nnDists <- apply(coreDists, 1, \(r) sort(r)[minPts + 1])
-  delta <- quantile(nnDists, probs = 1 - split_err_prob, names = FALSE)
+  #expectedCorePts <- x[Ef > lambda,]
+  #coreDists <- as.matrix(dist(expectedCorePts))
+  #nnDists <- apply(coreDists, 1, \(r) sort(r)[minPts + 1])
+  #delta <- quantile(nnDists, probs = 1 - split_err_prob, names = FALSE)
+  
+  if(is.null(dists)) {
+    dists <- as.matrix(dist(x))
+  }
+  
+  k <- minPts + 1
+  nnDists <- apply(dists[Ef > lambda, ], 1, \(r) sort(r, partial=k)[k])
+  delta  <- quantile(nnDists, probs = 1 - split_err_prob, names = FALSE)
   
   return(c(lambda, delta))
 }
