@@ -99,7 +99,7 @@ specificity <- function(X, labels, target_locs, size_lb = 20, ntimes = 50){
       ch <- geometry::convhulln(fake_x)
     }
     status <- geometry::inhulln(ch, target_locs)
-    hull_has_mu[label_id] <- any(status)
+    hull_has_mu[label_id] <- sum(status) == 1
   }
   mean(hull_has_mu)
 }

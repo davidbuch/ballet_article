@@ -90,9 +90,11 @@ x <- matrix(x, ncol = 1)
 fsamps <- matrix(nrow = S, ncol = nrow(x))
 for(s in 1:S) fsamps[s,] <- PosteriorFunction(dpfit, s)(x)
 
-lambda_delta <- compute_lambda_delta(x, fsamps, minPts = 5,
-                                     cut_quantile = 0.05, split_err_prob = 0)
-clustering_samps <- density_based_clusterer(x, fsamps, lambda_delta = lambda_delta)
+# set the lambda delta automatically. This is just a placeholder.
+lambda_delta <- compute_lambda_delta(x, fsamps,
+                                     cut_quantile = 0.05)
+
+clustering_samps <- density_based_clusterer(x, fsamps, cut_quantile = 0.05)
 clustering_point_estimate <- salso_custom(clustering_samps)
 
 png("output/illustrations/univariate_gauss_unif_ballet_dpmm.png", 
