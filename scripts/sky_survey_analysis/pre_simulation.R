@@ -149,27 +149,6 @@ points_per_cluster <- (1 - target_quantile)*nobs /
 minPts <- round(points_per_cluster / 4)
 print(sprintf("Hueristic Suggested minPts: %d", minPts))
 
-
-# determine an appropriate split_error_prob parameter
-sperp_options <- seq(0.01, 0.25, 0.02)
-delta_options <- c()
-for(i in 1:length(sperp_options))
-  delta_options[i] <- compute_lambda_delta(X, 
-                                  f_samps, 
-                                  target_quantile, 
-                                  minPts, 
-                                  split_err_prob = sperp_options[i])[2]
-png("output/sky_survey_analysis/synthdata_delta_vs_sperp.png", 
-    width = 10, height = 10, units = 'in', res = 300)
-plot(sperp_options, delta_options, 
-     main = "Delta vs. Split Err. Prob.", 
-     xlab = NA, ylab = NA, type = 'l')
-dev.off()
-
-# There is no elbow, so stick with the default
-split_err_prob <- 0.05
-
-
 # Try finding an appropriate minPts algorithmically
 minPts_options <- seq(10, 100, 10)
 ballet_metrics <- data.frame()
@@ -177,8 +156,7 @@ for(minPts in minPts_options){
   clustering_samps <- density_based_clusterer(X, 
                                               f_samps, 
                                               cut_quantile = target_quantile,
-                                              minPts = minPts,
-                                              split_err_prob = split_err_prob)
+                                              minPts = minPts)
   
   # Compute a quick, approximate point estimate based on this minPts value
   sel_active_pe <- colMeans(clustering_samps != 0) >= 0.5
@@ -214,14 +192,13 @@ dev.off()
 
 # There's seemingly no improvement in BALLET from scanning over minPts,
 # so stick with the default from the heuristic
-minPts <- round(points_per_cluster / 4)
+minPts <- ceiling(log2(nobs)) 
 
 
 clustering_samps <- density_based_clusterer(X, 
                                             f_samps, 
                                             cut_quantile = target_quantile,
-                                            minPts = minPts,
-                                            split_err_prob = split_err_prob)
+                                            minPts = minPts)
 
 always0_indcs <- which(apply(clustering_samps, 2, \(v) mean(v == 0) > 0.8))
 non0_clustering_samps <- clustering_samps[,-always0_indcs]
@@ -250,7 +227,7 @@ p1 <- ggplot() +
   geom_point(aes(x = X1, y = X2), shape = 4, size = 3, data = data.frame(mu)) + 
   guides(color = 'none') + 
   labs(title = "2.5%-ile Lower Bound",
-       subtitle = sprintf("minPts: %d, spep: %.2f, sensitivity: %.2f, specificity: %.2f", minPts, split_err_prob, sensitivity(X, data$lb, mu), specificity(X, data$lb, mu)),
+       subtitle = sprintf("minPts: %d, sensitivity: %.2f, specificity: %.2f", minPts, sensitivity(X, data$lb, mu), specificity(X, data$lb, mu)),
        x = NULL, y = NULL)
 
 enriched_data_pe <- enrich_small_clusters(data, 'pe', size_lb = 25)
@@ -261,7 +238,7 @@ p2 <- ggplot() +
   geom_point(aes(x = X1, y = X2), shape = 4, size = 3, data = data.frame(mu)) + 
   guides(color = 'none') + 
   labs(title = "Point Estimate",
-       subtitle = sprintf("minPts: %d, spep: %.2f, sensitivity: %.2f, specificity: %.2f", minPts, split_err_prob, sensitivity(X, data$pe, mu), specificity(X, data$pe, mu)),
+       subtitle = sprintf("minPts: %d, sensitivity: %.2f, specificity: %.2f", minPts, sensitivity(X, data$pe, mu), specificity(X, data$pe, mu)),
        x = NULL, y = NULL)
 
 enriched_data_ub <- enrich_small_clusters(data, 'ub', size_lb = 25)
@@ -272,7 +249,7 @@ p3 <- ggplot() +
   geom_point(aes(x = X1, y = X2), shape = 4, size = 3, data = data.frame(mu)) + 
   guides(color = 'none') + 
   labs(title = "97.5%-ile Upper Bound",
-       subtitle = sprintf("minPts: %d, spep: %.2f, sensitivity: %.2f, specificity: %.2f", minPts, split_err_prob, sensitivity(X, data$ub, mu), specificity(X, data$ub, mu)),
+       subtitle = sprintf("minPts: %d, sensitivity: %.2f, specificity: %.2f", minPts, sensitivity(X, data$ub, mu), specificity(X, data$ub, mu)),
        x = NULL, y = NULL)
 
 png("output/sky_survey_analysis/synthdata_ballet_pe.png", 

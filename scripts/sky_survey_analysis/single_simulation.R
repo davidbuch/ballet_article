@@ -74,14 +74,12 @@ close(pb)
 # ---------------------------------------------------------
 # Find the density based clusters
 target_quantile <- 0.9
-minPts <- 10 # determined from pre-simulation
-split_err_prob <- 0.05 # determined from pre-simulation
+minPts <- ceiling(log2(nobs)) # Heuristic
 
 clustering_samps <- density_based_clusterer(X, 
                                             f_samps, 
                                             cut_quantile = target_quantile,
-                                            minPts = minPts,
-                                            split_err_prob = split_err_prob)
+                                            minPts = minPts)
 
 always0_indcs <- which(apply(clustering_samps, 2, \(v) mean(v == 0) > 0.8))
 non0_clustering_samps <- clustering_samps[,-always0_indcs]
@@ -141,6 +139,7 @@ data$dbscan_60 <- dbfit$cluster
 # Save the Results
 # ----------------------------------------
 test_results <- data.frame(
+  data = data,
   seed = random_seed,
   type = c("DBSCAN_60",
            "DBSCAN",
@@ -166,5 +165,5 @@ test_results <- data.frame(
 
 dir_name <- "output/sky_survey_analysis/sim_study"
 dir.create(dir_name, showWarnings = FALSE, recursive = TRUE)
-filename <- sprintf(paste0(dir_name, "/accuracy_%d.rds"), random_seed)
+filename <- sprintf(paste0(dir_name, "/results_%d.rds"), random_seed)
 saveRDS(test_results, filename)
