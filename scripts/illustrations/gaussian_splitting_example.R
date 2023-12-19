@@ -1,10 +1,13 @@
 library(dirichletprocess)
 library(salso)
+library(matrixStats)
 source("R/density_clusterer.R")
 source("R/ne_parts_pair_counting.R")
 source("R/salso_custom.R")
 source("R/fn_from_apt.R")
 source("R/scale_box.R")
+source("R/choose_lambda.R")
+
 set.seed(1234)
 
 dir.create('output/illustrations', recursive = TRUE, showWarnings = FALSE)
@@ -90,9 +93,16 @@ x <- matrix(x, ncol = 1)
 fsamps <- matrix(nrow = S, ncol = nrow(x))
 for(s in 1:S) fsamps[s,] <- PosteriorFunction(dpfit, s)(x)
 
-lambda_delta <- compute_lambda_delta(x, fsamps, minPts = 5,
-                                     cut_quantile = 0.05, split_err_prob = 0)
-clustering_samps <- density_based_clusterer(x, fsamps, lambda_delta = lambda_delta)
+Ef <- matrixStats::colMedians(fsamps)
+  
+clusters <- level_set_clusters(x,Ef, cut_quantiles=seq(0,0.9,length.out=10))
+clustree(clusters, prefix="q")
+
+lambda_delta <- compute_lambda_delta(x, fsamps, 
+                                     cut_quantile = 0.05)
+
+clustering_samps <- density_based_clusterer(x, fsamps, 
+                                      lambda_delta = lambda_delta)
 clustering_point_estimate <- salso_custom(clustering_samps)
 
 png("output/illustrations/univariate_gauss_unif_ballet_dpmm.png", 
