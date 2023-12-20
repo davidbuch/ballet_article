@@ -108,9 +108,27 @@ compute_lambda_delta <- function(x,
     dists <- as.matrix(dist(x))
   }
   
-  k <- minPts + 1
-  nnDists <- apply(dists[Ef > lambda, ], 1, \(r) sort(r, partial=k)[k])
-  delta  <- quantile(nnDists, probs = 1 - split_err_prob, names = FALSE)
+  delta <- delta_given_quantile(dists, Ef, cut_quantile, minPts)
   
   return(c(lambda, delta))
+}
+
+# Our heuristic to compute delta given 
+# - distX: the distance matrix of the entire dataset,
+# - Ef: the estimated density of each point,
+# and optional arguments:
+# - cut_quantile: the fraction of noise points,
+# - minPts: the size of the radius to ensure each active point has 
+#           at least minPts many neighbors in the entire dataset.
+
+delta_given_quantile <- function(distX, 
+                                 Ef, 
+                                 cut_quantile=cut_quantile,
+                                 minPts = ceiling(log2(nrow(distX)))) {
+  k <- minPts + 1
+  lambda <- quantile(Ef, probs = cut_quantile)
+  
+  nnDists <- apply(distX[Ef > lambda, ], 1, \(r) sort(r, partial=k)[k])
+  delta  <- quantile(nnDists, probs = .99, names = FALSE)
+  return(delta)
 }
