@@ -139,7 +139,6 @@ data$dbscan_60 <- dbfit$cluster
 # Save the Results
 # ----------------------------------------
 test_results <- data.frame(
-  data = data,
   seed = random_seed,
   type = c("DBSCAN_60",
            "DBSCAN",
@@ -165,5 +164,7 @@ test_results <- data.frame(
 
 dir_name <- "output/sky_survey_analysis/sim_study"
 dir.create(dir_name, showWarnings = FALSE, recursive = TRUE)
-filename <- sprintf(paste0(dir_name, "/results_%d.rds"), random_seed)
+filename <- sprintf(paste0(dir_name, "/accuracy_%d.rds"), random_seed)
 saveRDS(test_results, filename)
+filename <- sprintf(paste0(dir_name, "/results_%d.rds"), random_seed)
+saveRDS(data, filename)
