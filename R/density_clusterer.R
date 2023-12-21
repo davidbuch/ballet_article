@@ -1,3 +1,6 @@
+library(RANN)
+library(matrixStats)
+
 density_based_clusterer <- function(x, 
                                     fsamps,
                                     cut_quantile = 0.2, 
@@ -56,8 +59,7 @@ compute_lambda_delta <- function(x,
                                  fsamps,
                                  cut_quantile = 0.2, 
                                  minPts = ceiling(log2(nrow(x))),
-                                 split_err_prob = 0.01,
-                                 dists=NULL)
+                                 split_err_prob = 0.01)
 {
   N <- ifelse(is.null(dim(x)), length(x), dim(x)[1])
   D <- ifelse(is.null(dim(x)), 1, dim(x)[2])
@@ -104,11 +106,7 @@ compute_lambda_delta <- function(x,
   #nnDists <- apply(coreDists, 1, \(r) sort(r)[minPts + 1])
   #delta <- quantile(nnDists, probs = 1 - split_err_prob, names = FALSE)
   
-  if(is.null(dists)) {
-    dists <- as.matrix(dist(x))
-  }
-  
-  delta <- delta_given_quantile(dists, Ef, cut_quantile, minPts)
+  delta <- delta_given_quantile(x, Ef, cut_quantile, minPts)
   
   return(c(lambda, delta))
 }
@@ -121,14 +119,18 @@ compute_lambda_delta <- function(x,
 # - minPts: the size of the radius to ensure each active point has 
 #           at least minPts many neighbors in the entire dataset.
 
-delta_given_quantile <- function(distX, 
-                                 Ef, 
-                                 cut_quantile=cut_quantile,
-                                 minPts = ceiling(log2(nrow(distX)))) {
-  k <- minPts + 1
+delta_given_quantile <- function(x, Ef, cut_quantile=cut_quantile,
+                                 minPts = ceiling(log2(nrow(x)))) {
+
   lambda <- quantile(Ef, probs = cut_quantile)
+  k <- minPts + 1
+
+  # Find the k-nearest neighbor distance for all elements in the active set.
+  # The following code is equivalent to (but much faster):
+  #  distX <- as.matrix(dist(x))
+  #  nnDists <- apply(distX[Ef > lambda, ], 1, \(r) sort(r, partial=k)[k])
+  nnDists <- rowMaxs(nn2(x, x[Ef > lambda, ], k, eps=1e-3, searchtype="priority")$nn.dists)
   
-  nnDists <- apply(distX[Ef > lambda, ], 1, \(r) sort(r, partial=k)[k])
   delta  <- quantile(nnDists, probs = .99, names = FALSE)
   return(delta)
 }
