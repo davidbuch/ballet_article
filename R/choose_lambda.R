@@ -5,29 +5,32 @@ source("R/density_clusterer.R")
 library(usedist)
 library(tidygraph)
 
- 
 # This function estimates the level set clustering
-# based on a density estimate fest (length n vector),  
-# a distance matrix distX (n x n matrix), and 
+# based on a density estimate Ef (length n vector),  
+# the n x p data matrix, and 
 # cut_quantile (a number between 0 and 1).
-level_set_clust <- function(cut_quantile, distX, fest, delta=NULL) {
-    distX <- as.matrix(distX)
+level_set_clust <- function(cut_quantile, x, Ef, delta=NULL, dists=NULL) {
     
     if(is.null(delta)) {
-      delta <- delta_given_quantile(distX, 
-                                    fest, 
+      delta <- delta_given_quantile(x, 
+                                    Ef, 
                                     cut_quantile=cut_quantile)
     }
   
-    labels <- rep(0, nrow(distX))
-    active <- fest >= quantile(fest, cut_quantile)
+    labels <- rep(0, nrow(x))
+    active <- Ef >= quantile(Ef, cut_quantile)
     
     if(sum(active) >= 2) {
       # If there are atleast two points in the active set,
       # cluster them using single linkage clustering, at 
       # threshold delta.
-      distX |>
-        usedist::dist_subset(active) |>
+      
+      if(is.null(dists)) {
+        dists <- dist(x)
+      }
+      
+      dists |>
+        dist_subset(active) |>
           hclust(method = "single") |> 
           cutree(h = delta) -> labels[active]
     } else if (sum(active) == 1) {
@@ -37,22 +40,27 @@ level_set_clust <- function(cut_quantile, distX, fest, delta=NULL) {
 } 
 
 # This function estimates a cluster tree based on 
-# data X (n x p matrix), a density estimate fest (length n vector),
+# data x (n x p matrix), a density estimate Ef (length n vector),
 # and a collection of quantiles cut_quantiles.
-level_set_clusters <- function(X, fest, 
-                            cut_quantiles=seq(0, 1, by = 0.1), 
-                           delta=NULL,
-                           prefix="q") {
+level_set_clusters <- function(x, Ef, 
+                               cut_quantiles=seq(0, 1, by = 0.1), 
+                               delta=NULL,
+                               prefix="cut=") {
     n <- nrow(X)
-    distX <- as.matrix(dist(X))
-    
     clusters <- vapply(X=cut_quantiles, FUN=level_set_clust, 
                        FUN.VALUE = rep(0, n), 
-                       distX, fest, delta)
+                       x, Ef, delta)
     colnames(clusters) <- sprintf("%s%.3f", prefix, cut_quantiles)
     clusters
 }
 
+
+
+## The following code is modified from the
+## clustertree (https://github.com/lazappi/clustree) package.
+## In the following, we are monkey patching the key functions from
+## the clustree package so that the noise cluster (cluster "0")  does 
+## appeare when we plot the clustertree.
 
 #' Get tree nodes
 #'
@@ -107,9 +115,6 @@ get_tree_nodes_p <- function(clusterings, prefix, metadata, node_aes_list) {
 }
 
 
-## Code modified from the
-## clustertree (https://github.com/lazappi/clustree) package:
-
 #' Get tree edges
 #'
 #' Extract the edges from a set of clusterings
@@ -132,7 +137,7 @@ get_tree_edges_p <- function(clusterings, prefix) {
     from_res <- res_values[idx]
     to_res <- res_values[idx + 1]
     
-    #Remove the zero cluster
+    #Remove the noise cluster
     from_clusters <- setdiff(sort(unique(clusterings[, from_res])), 0)
     to_clusters <- setdiff(sort(unique(clusterings[, to_res])), 0)
     
@@ -176,6 +181,8 @@ get_tree_edges_p <- function(clusterings, prefix) {
   return(edges)
   
 }
+
+## Monkey patch the functions in the clustree library.
 
 if(any(grepl("package:clustree", search()))) {
   message("Clustree deteched")

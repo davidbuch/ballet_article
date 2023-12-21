@@ -3,7 +3,7 @@ library(matrixStats)
 
 density_based_clusterer <- function(x, 
                                     fsamps,
-                                    cut_quantile = 0.2, 
+                                    cut_quantile = 0.1, 
                                     minPts = ceiling(log2(nrow(x))),
                                     split_err_prob = 0.01,
                                     lambda_delta,
@@ -65,72 +65,39 @@ compute_lambda_delta <- function(x,
   D <- ifelse(is.null(dim(x)), 1, dim(x)[2])
   stopifnot(ncol(fsamps) == N)
 
-  Ef <- colMeans(fsamps)
-  # set lambda here
+  Ef <- colMedians(fsamps)
   lambda <- quantile(Ef, probs = cut_quantile, names = FALSE)
-  #lambda <- quantile(fsamps, probs = cut_quantile, names = FALSE)
-  
-  # # In the below, we select a radius (delta) for our topological tube so that, 
-  # # if all core points had constant density greater than lambda within their 
-  # # respective delta balls, then we would *usually find another point within 
-  # # that point's delta ball*. The probability that there would be any core 
-  # # points with empty 'level-lambda' delta balls is controlled by the 
-  # # argument 'split_err_prob'.
-  # 
-  # Nc <- sum(colMeans(fsamps > lambda)) # estimate of number of core points
-  # 
-  # # Lower bound probability that an *individual* level-lambda delta ball will 
-  # # have >=1 other core point
-  # pr_gt1 <- (1 - split_err_prob)^1/Nc
-  # 
-  # # Upper bound probability that an individual level-lambda delta ball will have
-  # # no other core points
-  # pr_0 <- 1 - pr_gt1
-  # 
-  # # Upper bound probability that a specific 'other' core point will be outside 
-  # # an individual level-lambda delta ball
-  # p_miss <- pr_0^(1/(Nc - 1))
-  # 
-  # # Lower bound on the necessary probability coverage for an individual 
-  # # level-lambda delta ball
-  # p_cover <- 1 - p_miss
-  # 
-  # # Compute the necessary D-dimensional volume of the delta ball
-  # V_D_delta <- p_cover/lambda
-  # 
-  # # Compute the radius of a d-dimensional ball with volume V_D_delta
-  # delta <- ( (V_D_delta*gamma(D/2 + 1))^(1/D) ) / sqrt(3.14159)
-  
-  #expectedCorePts <- x[Ef > lambda,]
-  #coreDists <- as.matrix(dist(expectedCorePts))
-  #nnDists <- apply(coreDists, 1, \(r) sort(r)[minPts + 1])
-  #delta <- quantile(nnDists, probs = 1 - split_err_prob, names = FALSE)
-  
   delta <- delta_given_quantile(x, Ef, cut_quantile, minPts)
   
   return(c(lambda, delta))
 }
 
 # Our heuristic to compute delta given 
-# - distX: the distance matrix of the entire dataset,
+# - x: the observed n x d data matrix,
 # - Ef: the estimated density of each point,
+# - cut_quantile: the fraction of noise points
 # and optional arguments:
-# - cut_quantile: the fraction of noise points,
 # - minPts: the size of the radius to ensure each active point has 
-#           at least minPts many neighbors in the entire dataset.
+#           at least minPts neighbors in the entire dataset.
+# - split_err_prob: the quantile to choose among the nearest 
+#                   neighbor distance from the top. Defaults to the 
+#                   top 1%
 
-delta_given_quantile <- function(x, Ef, cut_quantile=cut_quantile,
-                                 minPts = ceiling(log2(nrow(x)))) {
+delta_given_quantile <- function(x, Ef, cut_quantile,
+                                 minPts = ceiling(log2(nrow(x))),
+                                 split_err_prob = 0.01) {
 
   lambda <- quantile(Ef, probs = cut_quantile)
   k <- minPts + 1
+  active <- Ef > lambda
 
   # Find the k-nearest neighbor distance for all elements in the active set.
-  # The following code is equivalent to (but much faster):
-  #  distX <- as.matrix(dist(x))
-  #  nnDists <- apply(distX[Ef > lambda, ], 1, \(r) sort(r, partial=k)[k])
-  nnDists <- rowMaxs(nn2(x, x[Ef > lambda, ], k, eps=1e-3, searchtype="priority")$nn.dists)
+  # The following code is equivalent to (but much faster than):
+  #  dists <- as.matrix(dist(x))
+  #  nnDists <- apply(dists[active, ], 1, \(r) sort(r, partial=k)[k])
+  nnDists <- rowMaxs(nn2(x, x[active, ], k, 
+                      eps=1e-3, searchtype="priority")$nn.dists)
   
-  delta  <- quantile(nnDists, probs = .99, names = FALSE)
+  delta  <- quantile(nnDists, probs = 1-split_err_prob, names = FALSE)
   return(delta)
 }

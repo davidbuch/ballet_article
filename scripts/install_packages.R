@@ -12,6 +12,8 @@ install.packages("mcclust")
 install.packages("dbscan")
 install.packages("geometry")
 install.packages("RANN")
+install.packages("usedist")
+install.packages("clustree")
 
 install.packages("devtools")
 devtools::install_github("sarawade/mcclust.ext")
