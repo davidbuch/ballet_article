@@ -8,14 +8,8 @@ library(tidygraph)
 # This function estimates the level set clustering
 # based on a density estimate Ef (length n vector),  
 # the n x p data matrix, and 
-# cut_quantile (a number between 0 and 1).
-level_set_clust <- function(cut_quantile, x, Ef, delta=NULL, dists=NULL) {
-    
-    if(is.null(delta)) {
-      delta <- delta_given_quantile(x, 
-                                    Ef, 
-                                    cut_quantile=cut_quantile)
-    }
+# cut_quantile (a number between 0 and 1),
+level_set_clust <- function(cut_quantile, x, Ef, delta, dists=NULL) {
   
     labels <- rep(0, nrow(x))
     active <- Ef >= quantile(Ef, cut_quantile)
@@ -44,12 +38,19 @@ level_set_clust <- function(cut_quantile, x, Ef, delta=NULL, dists=NULL) {
 # and a collection of quantiles cut_quantiles.
 level_set_clusters <- function(x, Ef, 
                                cut_quantiles=seq(0, 1, by = 0.1), 
-                               delta=NULL,
+                               deltas=NULL,
                                prefix="cut=") {
-    n <- nrow(X)
-    clusters <- vapply(X=cut_quantiles, FUN=level_set_clust, 
-                       FUN.VALUE = rep(0, n), 
-                       x, Ef, delta)
+    dists <- dist(x)
+    if(is.null(deltas)) {
+      deltas <- delta_given_quantiles(x, Ef, cut_quantiles)
+    }
+
+    map2(cut_quantiles, deltas,
+          \(cut_quantile, delta)
+                level_set_clust(cut_quantile, x, Ef, delta,
+                                dists=dists), .progress=TRUE) %>%  
+      do.call(cbind, .) -> clusters  
+
     colnames(clusters) <- sprintf("%s%.3f", prefix, cut_quantiles)
     clusters
 }
@@ -185,7 +186,7 @@ get_tree_edges_p <- function(clusterings, prefix) {
 ## Monkey patch the functions in the clustree library.
 
 if(any(grepl("package:clustree", search()))) {
-  message("Clustree deteched")
+  message("Clustree detached")
   detach("package:clustree") 
 }
 

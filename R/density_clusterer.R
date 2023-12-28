@@ -89,15 +89,47 @@ delta_given_quantile <- function(x, Ef, cut_quantile,
 
   lambda <- quantile(Ef, probs = cut_quantile)
   k <- minPts + 1
-  active <- Ef > lambda
+  active <- Ef >= lambda
 
   # Find the k-nearest neighbor distance for all elements in the active set.
   # The following code is equivalent to (but much faster than):
   #  dists <- as.matrix(dist(x))
   #  nnDists <- apply(dists[active, ], 1, \(r) sort(r, partial=k)[k])
-  nnDists <- rowMaxs(nn2(x, x[active, ], k, 
+  nnDists <- rowMaxs(nn2(x, x[active, , drop=FALSE], k, 
                       eps=1e-3, searchtype="priority")$nn.dists)
   
   delta  <- quantile(nnDists, probs = 1-split_err_prob, names = FALSE)
   return(delta)
+}
+
+
+# The same function as above,
+# but takes a list of quantiles as input and 
+# efficiently computes the level-sets.
+delta_given_quantiles <- function(x, Ef, cut_quantiles,
+                                 minPts = ceiling(log2(nrow(x))),
+                                 split_err_prob = 0.01) {
+
+  cut_quantiles <- sort(cut_quantiles)
+  lambda.zero <- quantile(Ef, probs = cut_quantiles[1])
+  k <- minPts + 1
+  active.ub <- Ef >= lambda.zero
+
+  # Find the k-nearest neighbor distance for all elements in the active set.
+  # The following code is equivalent to (but much faster than):
+  #  dists <- as.matrix(dist(x))
+  #  nnDists <- apply(dists[active, ], 1, \(r) sort(r, partial=k)[k])
+  nnDists <- rowMaxs(nn2(x, x[active.ub, , drop=FALSE], k, 
+                      eps=1e-3, searchtype="priority")$nn.dists)
+  
+  deltas <- numeric(length(cut_quantiles))
+
+  for(i in seq_along(cut_quantiles)) {
+    lambda <- quantile(Ef, probs = cut_quantiles[i])
+    active <- Ef[active.ub] >= lambda
+    deltas[i]  <- quantile(nnDists[active], 
+                       probs = 1-split_err_prob, names = FALSE)
+  }
+
+  return(deltas)
 }
