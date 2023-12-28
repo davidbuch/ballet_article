@@ -99,6 +99,46 @@ specificity <- function(X, labels, target_locs, size_lb = 20, ntimes = 50){
       ch <- geometry::convhulln(fake_x)
     }
     status <- geometry::inhulln(ch, target_locs)
+    hull_has_mu[label_id] <- any(status)
+  }
+  mean(hull_has_mu)
+}
+
+# The fraction of clusters that contain 
+# exactly one target location.
+exact_match_frac <- function(X, labels, target_locs, size_lb = 20, ntimes = 50){
+  df <- data.frame(x = X[,1], y = X[,2], labs = labels)
+  cluster_info <- df %>% 
+    group_by(labs) %>%
+    dplyr::summarise(mx = mean(x),
+              my = mean(y),
+              sdx = sd(x),
+              sdy = sd(y),
+              n = n())
+  small_clusters <- (cluster_info %>% 
+                       filter(n < size_lb))[['labs']]
+  within_group_sds <- cluster_info[
+    (cluster_info[['labs']] != 0) & 
+      (cluster_info[['n']] > size_lb),] %>%
+    drop_na() %>% 
+    select(sdx,sdy) %>% 
+    colMeans()
+  
+  non_noise_labels <- setdiff(unique(labels), 0)
+  hull_has_mu <- rep(0, length(non_noise_labels))
+  for(label_id in 1:length(non_noise_labels)){
+    kpe <- non_noise_labels[label_id]
+    if(sum(labels == kpe) > size_lb){
+      ch <- geometry::convhulln(X[labels == kpe,])
+    }else{
+      center <- colMeans(X[labels == kpe,,drop=FALSE])
+      fake_x <- matrix(rnorm(n = ncol(X)*ntimes, 
+                             mean = rep(center, each = ntimes), 
+                             sd = rep(within_group_sds, each = ntimes)), 
+                       ncol = 2)
+      ch <- geometry::convhulln(fake_x)
+    }
+    status <- geometry::inhulln(ch, target_locs)
     hull_has_mu[label_id] <- sum(status) == 1
   }
   mean(hull_has_mu)
