@@ -95,7 +95,7 @@ for(s in 1:S) fsamps[s,] <- PosteriorFunction(dpfit, s)(x)
 
 Ef <- matrixStats::colMedians(fsamps)
   
-clusters <- level_set_clusters(x,Ef, cut_quantiles=seq(0,0.9,length.out=10))
+clusters <- level_set_clusters(x,Ef, cut_quantiles=seq(0,0.9,length.out=10), prefix="q")
 clustree(clusters, prefix="q")
 
 lambda_delta <- compute_lambda_delta(x, fsamps, 
