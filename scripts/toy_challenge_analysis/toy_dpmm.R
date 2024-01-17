@@ -6,12 +6,14 @@ library(gridExtra)
 library(dirichletprocess)
 library(salso)
 library(mcclust.ext)
+library(matrixStats)
 source("R/dirichletprocess_custom_init.R")
 source("R/density_clusterer.R")
 source("R/ne_parts_pair_counting.R")
 source("R/salso_custom.R")
 source("R/credible_bounds.R")
 source("R/rearrange_labels.R")
+source("R/choose_lambda.R")
 Rcpp::sourceCpp("src/subpartiton_min_max.cpp")
 dir.create('output/toy_challenge', recursive = TRUE, showWarnings = FALSE)
 
@@ -29,20 +31,17 @@ toy_datasets <- list(
   tsne2 = tsne
 )
 
-
-ballet_params <- list( # we used to do tsne with minPts 5 and sep = 0
-  tsne = list(minPts = floor((nrow(tsne)/nrow(circles))*5), 
-               cut_quantile = 0.15, split_err_prob = 0.01),
-  two_moons = list(minPts = 5, cut_quantile = 0.08, split_err_prob = 0.01),
-  circles = list(minPts = 5, cut_quantile = 0.025, split_err_prob = 0.01),
-  tsne2 = list(minPts = floor((nrow(tsne)/nrow(circles))*5), 
-              cut_quantile = 0.08, split_err_prob = 0.01)
-)
+visualize_cluster_tree <- TRUE
+quantiles <- list(tsne =  0.15,
+                  two_moons = 0.08,
+                  circles = 0.025,
+                  tsne2 = 0.08)
 
 # This Loop Will Create dataframes for each dataset that contain a variety of 
 # information we would like to plot.
 nsims <- 1000
 for(d in 1:length(toy_datasets)){
+  cat("Loading Dataset: ", names(toy_datasets)[d], "\n")
   dataset_name <- names(toy_datasets)[d]
   x <- scale(as.matrix(toy_datasets[[d]]))
   xx <- yy <- seq(-3,3, length.out = 30)
@@ -57,6 +56,7 @@ for(d in 1:length(toy_datasets)){
                    kappa0 = 0.1, #0.01,
                    nu = 10) # 200
   # Fit the DPMM  Model
+  cat("Fitting DPMM Model\n")
   dp_mod <- DirichletProcessMvnormal(x, 
                                      numInitialClusters = 20,
                                      g0Priors = g0Priors,
@@ -76,6 +76,7 @@ for(d in 1:length(toy_datasets)){
   plot_grid$f_pe <- colMeans(fn_samps_grid)
   rm(fn_samps_grid)
   
+  cat("Fitting DPMM Model with SALSO\n")
   # Get the Model-Based Cluster Allocations and WG Vertical Credible Bounds
   mixture_clustering_samps <- matrix(nrow = nsims, ncol = nrow(x))
   for(s in 1:nsims)
@@ -93,12 +94,21 @@ for(d in 1:length(toy_datasets)){
   plot_obs$mm_vu_wg <- wg_mixture_bounds$c.uppervert[1,]
   rm(dp_mod)
   
+  
+  if (visualize_cluster_tree) {
+    cat("Visualizing Cluster Tree for BALLET\n")
+    Ef <- matrixStats::colMedians(fn_samps_obs)
+    clusters <- level_set_clusters(x,Ef, cut_quantiles=seq(0,1,length.out=10))
+    clustree(clusters, prefix="q")
+    ggsave(paste0("output/toy_challenge/clustree_", dataset_name, ".png"), 
+           width = 10, height = 10)
+  }
+  
+  cat("Finding BALLET density based-clusters\n")
   # Get the Density-Based Cluster Allocations and Our Credible Bounds
   density_clustering_samps <- 
     density_based_clusterer(x, fn_samps_obs,
-                            minPts = ballet_params[[d]][['minPts']],
-                            cut_quantile = ballet_params[[d]][['cut_quantile']], 
-                            split_err_prob = ballet_params[[d]][['split_err_prob']])
+                            cut_quantile = quantiles[[d]])
   pst <- compute_pst(density_clustering_samps)
   pdt <- compute_pdt(density_clustering_samps)
   density_pe <- salso_custom(density_clustering_samps, pst, pdt)
@@ -107,6 +117,7 @@ for(d in 1:length(toy_datasets)){
   plot_obs$db_pe <- density_pe
   plot_obs$db_vl <- density_bounds$lower
   plot_obs$db_vu <- density_bounds$upper
+  
   
   saveRDS(plot_obs, paste0("output/toy_challenge/plot_obs_dpmm_", dataset_name, ".rds"))
   saveRDS(plot_grid, paste0("output/toy_challenge/plot_grid_dpmm_", dataset_name, ".rds"))
