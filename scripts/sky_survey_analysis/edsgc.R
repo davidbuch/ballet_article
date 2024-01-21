@@ -103,29 +103,60 @@ close(pb)
 # ----------------------------------------
 # Find the BALLET clusters
 # ----------------------------------------
-# We will use a scientifically motivated lambda rather than a target_quantile
 
-# target_quantile <- 0.9
-# 
-# approximate_number_of_clusters <- 100
-# points_per_cluster <- (1 - target_quantile)*nobs / 
-#   approximate_number_of_clusters
-# minPts <- round(points_per_cluster / 4)
-# print(sprintf("Hueristic Suggested minPts: %d", minPts))
-# # Stick with the default based on simulation analysis
+### ---- Miheer's Sensitivity analysis -----
+# dists <- as.matrix(dist(X))
 # split_err_prob <- 0.05
+# split_err_prob1 <- 0.01
+#  split_err_prob2 <- 0.02
+#
+# minPts1 <- ceiling(log(nrow(X)))
+# minPts2 <- ceiling(log10(nrow(X)))
 # 
-# clustering_samps <- density_based_clusterer(X, 
-#                                             f_samps, 
-#                                             cut_quantile = target_quantile,
-#                                             minPts = minPts,
-#                                             split_err_prob = split_err_prob)
+#  David B's old heuristic:
+#  approximate_number_of_clusters <- 100
+#  points_per_cluster <- (1 - target_quantile)*nobs / 
+#               approximate_number_of_clusters
+#  minPts <- round(points_per_cluster / 4)
+#
+# compute_lambda_delta(X, f_samps, cut_quantile = target_quantile,
+#                    minPts = minPts, split_err_prob = split_err_prob, dists=dists)
+# [1] 49.818585379  0.001310875
+#
+#compute_lambda_delta(X, f_samps, cut_quantile = target_quantile,
+#                                     minPts = minPts, split_err_prob = split_err_prob2,
+#                                     dists=dists)
+# [1] 49.818585379  0.001409561
+#
+#compute_lambda_delta(X, f_samps, cut_quantile = target_quantile,
+#                     minPts = minPts, split_err_prob = split_err_prob1,
+#                     dists=dists)
+#
+#[1] 49.818585379  0.001473619
+#
+#compute_lambda_delta(X, f_samps, cut_quantile = target_quantile,
+#                     minPts = minPts1, split_err_prob = split_err_prob, dists=dists)
+# [1] 49.81858538  0.00136122
+#
+#compute_lambda_delta(X, f_samps, cut_quantile = target_quantile,
+#                     minPts = minPts2, split_err_prob = split_err_prob, dists=dists)
+# [1] 4.981859e+01 9.474415e-04
+#
+#compute_lambda_delta(X, f_samps, cut_quantile = target_quantile,
+#                     minPts = minPts2, split_err_prob = split_err_prob1, dists=dists)
+#
+# [1] 49.818585379  0.001121805
+### ---- End of sensitivity analysis ----
 
+# Miheer's final proposal
+split_err_prob <- 0.01
+minPts <- ceiling(log2(nobs))
 
-# ----------------------------------------
-# Find the BALLET clusters (SPEP 0.01)
-# ----------------------------------------
-# Scientifically motivated lambda: overdensity exceeds 1
+clustering_samps <- density_based_clusterer(X, f_samps, 
+                                            cut_quantile = target_quantile,
+                                            minPts = minPts)
+
+# David's proposed "scientifically motivated" lambda (overdensity exceeds 1)
 # - equivalent to 2 times the average density on the space
 # - equivalent to 2 times (1 / Area)
 lambda <- 2 / prod(apply(plot_grid[c('x','y')], 2, max))
@@ -134,6 +165,7 @@ delta <- compute_delta(data, f_samps, lambda, 10, 0.01)
 clustering_samps <- density_based_clusterer(X,
                                             f_samps,
                                             lambda_delta = c(lambda, delta))
+
 
 always0_indcs <- which(apply(clustering_samps, 2, \(v) mean(v == 0) > 0.8))
 non0_clustering_samps <- clustering_samps[,-always0_indcs]
