@@ -98,26 +98,42 @@ for(s in 1:nsamps){
 }
 close(pb)
 
+
+
 # ----------------------------------------
 # Find the BALLET clusters
 # ----------------------------------------
-# target quantile is scientifically motivated
-target_quantile <- 0.9
+# We will use a scientifically motivated lambda rather than a target_quantile
 
-# Heuristically determine an appropriate minPts parameter
-approximate_number_of_clusters <- 100
-points_per_cluster <- (1 - target_quantile)*nobs / 
-  approximate_number_of_clusters
-minPts <- round(points_per_cluster / 4)
-print(sprintf("Hueristic Suggested minPts: %d", minPts))
-# Stick with the default based on simulation analysis
-split_err_prob <- 0.05
+# target_quantile <- 0.9
+# 
+# approximate_number_of_clusters <- 100
+# points_per_cluster <- (1 - target_quantile)*nobs / 
+#   approximate_number_of_clusters
+# minPts <- round(points_per_cluster / 4)
+# print(sprintf("Hueristic Suggested minPts: %d", minPts))
+# # Stick with the default based on simulation analysis
+# split_err_prob <- 0.05
+# 
+# clustering_samps <- density_based_clusterer(X, 
+#                                             f_samps, 
+#                                             cut_quantile = target_quantile,
+#                                             minPts = minPts,
+#                                             split_err_prob = split_err_prob)
 
-clustering_samps <- density_based_clusterer(X, 
-                                            f_samps, 
-                                            cut_quantile = target_quantile,
-                                            minPts = minPts,
-                                            split_err_prob = split_err_prob)
+
+# ----------------------------------------
+# Find the BALLET clusters (SPEP 0.01)
+# ----------------------------------------
+# Scientifically motivated lambda: overdensity exceeds 1
+# - equivalent to 2 times the average density on the space
+# - equivalent to 2 times (1 / Area)
+lambda <- 2 / prod(apply(plot_grid[c('x','y')], 2, max))
+delta <- compute_delta(data, f_samps, lambda, 10, 0.01)
+
+clustering_samps <- density_based_clusterer(X,
+                                            f_samps,
+                                            lambda_delta = c(lambda, delta))
 
 always0_indcs <- which(apply(clustering_samps, 2, \(v) mean(v == 0) > 0.8))
 non0_clustering_samps <- clustering_samps[,-always0_indcs]
@@ -180,15 +196,102 @@ p3 <- ggplot() +
        subtitle = sprintf("minPts: %d, spep: %.2f", minPts, split_err_prob),
        x = NULL, y = NULL)
 
-png("output/sky_survey_analysis/edsgc_ballet_pe.png", 
+png("output/sky_survey_analysis/edsgc_ballet_pe_01.png", 
     width = 5, height = 5, units = 'in', res = 300)
 print(p2)
 dev.off()
 
-png("output/sky_survey_analysis/edsgc_ballet_bounds.png", 
+png("output/sky_survey_analysis/edsgc_ballet_bounds_01.png", 
     width = 10, height = 5, units = 'in', res = 300)
 print(grid.arrange(p1, p3, nrow = 1))
 dev.off()
+
+# ----------------------------------------
+# Find the BALLET clusters (SPEP 0.05)
+# ----------------------------------------
+# Scientifically motivated lambda: overdensity exceeds 1
+# - equivalent to 2 times the average density on the space
+# - equivalent to 2 times (1 / Area)
+lambda <- 2 / prod(apply(plot_grid[c('x','y')], 2, max))
+delta <- compute_delta(data, f_samps, lambda, 10, 0.05)
+
+clustering_samps <- density_based_clusterer(X,
+                                            f_samps,
+                                            lambda_delta = c(lambda, delta))
+
+always0_indcs <- which(apply(clustering_samps, 2, \(v) mean(v == 0) > 0.8))
+non0_clustering_samps <- clustering_samps[,-always0_indcs]
+
+posterior_similarity_tensor <- compute_pst(non0_clustering_samps)
+posterior_difference_tensor <- compute_pdt(non0_clustering_samps)
+
+data$pe <- salso_custom(clustering_samps,
+                        pst = posterior_similarity_tensor,
+                        pdt = posterior_difference_tensor,
+                        always0_indcs = always0_indcs)
+
+bounds <- credible_ball_bounds_active_inactive(X, data$pe, clustering_samps)
+data$lb <- bounds$lower
+data$ub <- bounds$upper
+
+enriched_data_lb <- enrich_small_clusters(data, 'lb', size_lb = 25)
+p1 <- ggplot() + 
+  geom_point(aes(x = x, y = y, color = factor(lb)), 
+             size = 0.1, data = data %>% filter(lb != 0)) + 
+  geom_point(aes(x = x, y = y), 
+             size = 0.1, alpha = 0.2, color = 'black', 
+             data = data %>% filter(lb == 0)) +
+  stat_ellipse(aes(x = x, y = y, group = factor(lb)), 
+               data = enriched_data_lb %>% filter(lb != 0)) +
+  geom_point(aes(x = x, y = y, shape = catalogue), size = 2, data = clusters) +
+  scale_shape_manual(name = "Cluster\nCatalogue",
+                     labels = c("EDCCI", "Abell"),
+                     values = c(4,3)) + 
+  guides(color = 'none') + 
+  labs(title = "BALLET 2.5%-ile Lower Bound",
+       subtitle = sprintf("minPts: %d, spep: %.2f", minPts, split_err_prob),
+       x = NULL, y = NULL)
+
+enriched_data_pe <- enrich_small_clusters(data, 'pe', size_lb = 25)
+p2 <- ggplot() + 
+  geom_point(aes(x = x, y = y, color = factor(pe)), size = 0.1, data = data %>% filter(pe != 0)) + 
+  geom_point(aes(x = x, y = y), size = 0.1, alpha = 0.2, color = 'black', data = data %>% filter(pe == 0)) +
+  stat_ellipse(aes(x = x, y = y, group = factor(pe)), data = enriched_data_pe %>% filter(pe != 0)) +
+  geom_point(aes(x = x, y = y, shape = catalogue), size = 2, data = clusters) +
+  scale_shape_manual(name = "Cluster\nCatalogue",
+                     labels = c("EDCCI", "Abell"),
+                     values = c(4,3)) + 
+  guides(color = 'none') + 
+  labs(title = "BALLET Estimated Clusters and Catalogue Locations",
+       subtitle = sprintf("minPts: %d, spep: %.2f", minPts, split_err_prob),
+       x = NULL, y = NULL)
+
+enriched_data_ub <- enrich_small_clusters(data, 'ub', size_lb = 25)
+p3 <- ggplot() + 
+  geom_point(aes(x = x, y = y, color = factor(ub)), size = 0.1, data = data %>% filter(ub != 0)) + 
+  geom_point(aes(x = x, y = y), size = 0.1, alpha = 0.2, color = 'black', data = data %>% filter(ub == 0)) +
+  stat_ellipse(aes(x = x, y = y, group = factor(ub)), data = enriched_data_ub %>% filter(ub != 0)) +
+  geom_point(aes(x = x, y = y, shape = catalogue), size = 2, data = clusters) +
+  scale_shape_manual(name = "Cluster\nCatalogue",
+                     labels = c("EDCCI", "Abell"),
+                     values = c(4,3)) +
+  guides(color = 'none') + 
+  labs(title = "BALLET 97.5%-ile Upper Bound",
+       subtitle = sprintf("minPts: %d, spep: %.2f", minPts, split_err_prob),
+       x = NULL, y = NULL)
+
+png("output/sky_survey_analysis/edsgc_ballet_pe_05.png", 
+    width = 5, height = 5, units = 'in', res = 300)
+print(p2)
+dev.off()
+
+png("output/sky_survey_analysis/edsgc_ballet_bounds_05.png", 
+    width = 10, height = 5, units = 'in', res = 300)
+print(grid.arrange(p1, p3, nrow = 1))
+dev.off()
+
+
+
 
 # ----------------------------------------
 # Find the DBSCAN clusters

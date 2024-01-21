@@ -105,3 +105,25 @@ compute_lambda_delta <- function(x,
   
   return(c(lambda, delta))
 }
+
+
+compute_delta <- function(x,
+                          fsamps,
+                          lambda,
+                          minPts = 5,
+                          split_err_prob = 0.01)
+{
+  N <- ifelse(is.null(dim(x)), length(x), dim(x)[1])
+  D <- ifelse(is.null(dim(x)), 1, dim(x)[2])
+  stopifnot(ncol(fsamps) == N)
+  
+  Ef <- colMeans(fsamps)
+
+  expectedCorePts <- x[Ef > lambda,]
+  coreDists <- as.matrix(dist(expectedCorePts))
+  nnDists <- apply(coreDists, 1, \(r) sort(r)[minPts + 1])
+  delta <- quantile(nnDists, probs = 1 - split_err_prob, names = FALSE)
+  
+  return(delta)
+}
+
