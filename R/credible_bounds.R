@@ -64,13 +64,12 @@ credible_ball_bounds_active_inactive <- function(
     sep_loss = 1,
     join_loss = 1,
     miscolor_loss = 1/4){
-  
   nobs <- ncol(clustering_samps)
   nsamps <- nrow(clustering_samps)
   delta <- attr(clustering_samps,'delta')
   
   # Approximately compute the radius of the credible ball
-  napprox <- 1000 # find epsilon
+  napprox <- min(nsamps, 1000) # find epsilon
   row_samps <- sample(1:nsamps, napprox)
   partition_loss <- c()
   for(s in 1:napprox){

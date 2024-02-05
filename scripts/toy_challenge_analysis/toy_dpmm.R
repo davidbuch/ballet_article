@@ -31,7 +31,7 @@ toy_datasets <- list(
   tsne2 = tsne
 )
 
-visualize_cluster_tree <- TRUE
+visualize_cluster_tree <- FALSE #TRUE
 quantiles <- list(tsne =  0.15,
                   two_moons = 0.08,
                   circles = 0.025,
@@ -118,8 +118,6 @@ for(d in 1:length(toy_datasets)){
   plot_obs$db_vl <- density_bounds$lower
   plot_obs$db_vu <- density_bounds$upper
   
-  
   saveRDS(plot_obs, paste0("output/toy_challenge/plot_obs_dpmm_", dataset_name, ".rds"))
   saveRDS(plot_grid, paste0("output/toy_challenge/plot_grid_dpmm_", dataset_name, ".rds"))
-  
 }
