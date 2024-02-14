@@ -1,13 +1,17 @@
+library(here)
 library(tidyverse)
 library(gridExtra)
 library(dbscan)
-source("R/random_histogram_model.R")
-source("R/density_clusterer.R")
-source("R/ne_parts_pair_counting.R")
-source("R/salso_custom.R")
-source("R/credible_bounds.R")
-source("R/simstudy_accuracy_measures.R")
-dir.create("output/sky_survey_analysis", showWarnings = FALSE, recursive = TRUE)
+source(here("R/random_histogram_model.R"))
+source(here("R/density_clusterer.R"))
+source(here("R/ne_parts_pair_counting.R"))
+source(here("R/salso_custom.R"))
+source(here("R/credible_bounds.R"))
+source(here("R/simstudy_accuracy_measures.R"))
+
+out_dir <- here("output/sky_survey_analysis")
+
+dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
 
 random_seed <- 1234
 set.seed(random_seed)
@@ -23,7 +27,7 @@ K <- 42 # number of non-noise clusters
 active_parts <- rgamma(K, 3)
 active_parts <- active_parts / sum(active_parts)
 
-png("output/sky_survey_analysis/synthdata_component_weights.png", 
+png(file.path(out_dir,"synthdata_component_weights.png"), 
     width = 5, height = 5, units = 'in', res = 300)
 barplot((1 - R)*active_parts, 
         xlab = 'Component ID', 
@@ -54,7 +58,7 @@ z <- z[sel_in_bounds]
 
 data <- data.frame(x = X[,1], y = X[,2], z = factor(z))
 
-png("output/sky_survey_analysis/synthdata_data.png", 
+png(file.path(out_dir, "synthdata_data.png"), 
     width = 5, height = 5, units = 'in', res = 300)
 ggplot() +
   geom_point(data = data %>% filter(z == '0'),
@@ -108,7 +112,7 @@ for(k in 1:K){
     dnorm(plot_grid$y, mean = mu[k,2], sd = L[k,2,2])
 }
 
-png("output/sky_survey_analysis/synthdata_randhist_density.png", 
+png(file.path(out_dir, "synthdata_randhist_density.png"), 
     width = 10, height = 5, units = 'in', res = 300)
 shared_breaks <- quantile(log(c(plot_grid$f_pe, plot_grid$f_true)), 
                           prob = c(0,seq(0.875,1,0.025)), names = FALSE)
@@ -139,32 +143,29 @@ close(pb)
 # ----------------------------------------
 # Find the BALLET clusters
 # ----------------------------------------
-# target quantile is scientifically motivated
+# target quantile is assumed to be known
 target_quantile <- 0.9
+target_quantiles <- seq(0.7, 1.2, by=0.1)
 
 # Heuristically determine an appropriate minPts parameter
-approximate_number_of_clusters <- 100
-points_per_cluster <- (1 - target_quantile)*nobs / 
-  approximate_number_of_clusters
-minPts <- round(points_per_cluster / 4)
-print(sprintf("Hueristic Suggested minPts: %d", minPts))
-
+#approximate_number_of_clusters <- 100
+#points_per_cluster <- (1 - target_quantile)*nobs / 
+#  approximate_number_of_clusters
+#minPts <- round(points_per_cluster / 4)
+#print(sprintf("Hueristic Suggested minPts: %d", minPts))
 # Try finding an appropriate minPts algorithmically
-minPts_options <- seq(10, 100, 10)
-ballet_metrics <- data.frame()
-for(minPts in minPts_options){
-  clustering_samps <- density_based_clusterer(X, 
-                                              f_samps, 
-                                              cut_quantile = target_quantile,
-                                              minPts = minPts)
+#minPts_options <- seq(10, 100, 10)
+#ballet_metrics <- data.frame()
+clustering_samps <- map(target_quantiles, 
+                        \(tquant) density_based_clusterer(X, f_samps, cut_quantile = tquant))
   
   # Compute a quick, approximate point estimate based on this minPts value
-  sel_active_pe <- colMeans(clustering_samps != 0) >= 0.5
-  tmp_point_estimate <- rep(0, nobs)
-  tmp_point_estimate[sel_active_pe] <- X[sel_active_pe,] %>%
-    dist() %>%
-    hclust(method = "single") %>%
-    cutree(h = attr(clustering_samps, 'delta'))
+#  sel_active_pe <- colMeans(clustering_samps != 0) >= 0.5
+#  tmp_point_estimate <- rep(0, nobs)
+#  tmp_point_estimate[sel_active_pe] <- X[sel_active_pe,] %>%
+#    dist() %>%
+#    hclust(method = "single") %>%
+#    cutree(h = attr(clustering_samps, 'delta'))
   
   # Evaluate the quality of the point estimate
   ballet_metrics <- rbind(ballet_metrics,

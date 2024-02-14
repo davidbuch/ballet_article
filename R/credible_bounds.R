@@ -1,5 +1,6 @@
-Rcpp::sourceCpp("src/ne_loss.cpp")
-Rcpp::sourceCpp("src/subpartiton_min_max.cpp")
+library(here)
+Rcpp::sourceCpp(here("src/ne_loss.cpp"))
+Rcpp::sourceCpp(here("src/subpartiton_min_max.cpp"))
 
 credible_bounds <- function(pe, 
                           clustering_samps,

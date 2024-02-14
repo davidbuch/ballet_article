@@ -38,8 +38,7 @@ level_set_clust <- function(cut_quantile, x, Ef, delta, dists=NULL) {
 # and a collection of quantiles cut_quantiles.
 level_set_clusters <- function(x, Ef, 
                                cut_quantiles=seq(0, 1, by = 0.1), 
-                               deltas=NULL,
-                               prefix="cut=") {
+                               deltas=NULL) {
     dists <- dist(x)
     if(is.null(deltas)) {
       deltas <- delta_given_quantiles(x, Ef, cut_quantiles)
@@ -51,11 +50,133 @@ level_set_clusters <- function(x, Ef,
                                 dists=dists), .progress=TRUE) %>%  
       do.call(cbind, .) -> clusters  
 
-    colnames(clusters) <- sprintf("%s%.3f", prefix, cut_quantiles)
     clusters
 }
 
 
+# M is a n x L matrix, where the 
+# column l is a vector taking {0, \ldots, k} (the cluster allocations),
+# corresponds to a sub-partition of the n data points. Here k is assumed to 
+# depend on the column l.
+# 
+# In order to form a hclust tree, will assume that the clusters are nested.
+# That is if i,j \in [n] belong to the same cluster in column l, 
+# then they also belong to the same cluster in any column l' < l
+#
+# heights is a numeric non-negative vector representing the 
+# heirarchical clustering level. 
+convert_clusts_to_tree <- function (M, heights, sep='/')
+## hang = 0.1  is default for plot.hclust
+{
+  
+  # The internal notation for the noise cluster.
+  NOISE_CLUST <- 0
+
+  if (is.null(dim(M)) || ncol(M) == 1) {
+      # If there is just one level 
+      stopifnot(length(heights) == 1, "Only one height expected")
+      height <- heights[1]
+      
+      # Identify the non-null clusters  
+      labels <- setdiff(unique(M), NOISE_CLUST)
+      
+      # Assign them in a list
+      # This is a tree with all leaves
+      z <- list(labels)
+      
+      # Set attributes of each leaf
+      for(i in seq_along(labels)) {
+        attributes(z[[i]], "members") <- 1L
+        attributes(z[[i]], "height") <- height 
+        attributes(z[[i]], "leaf") <- TRUE 
+        attributes(z[[i]], "label") <- paste(height, z[[i]], sep=sep)
+      }
+      
+      attributes(z, "label_map") <- labels
+  } else {
+    
+     M1 <- M[,1] 
+     M2 <- M[,2]
+     
+     labels1 <- setdiff(unique(M1), NOISE_CLUST)
+     labels2 <- setdiff(unique(M2), NOISE_CLUST)
+     
+     sub_tree <- convert_to_tree(M[, -1], heights[-1])
+     label_map <- attributes(sub_tree, "label_map")
+     
+     z <- list()
+     
+     # assign each node at the current level 
+     # to the correct sub_tree at the next level
+     for(r in seq_along(labels1)) {
+      
+       #The label of the current cluster
+       l <- labels1[r]
+       
+       #For each point in the current cluster
+       which(M1 == l) %>% 
+         #compute the label in the successive cluster
+         map(\(i) M2[i]) %>% unique -> succ_clusters
+       
+       z[[r]] <- keep_at(sub_tree, label_map %in% succ_clusters)
+    
+       # sum up the member values of all the subtrees
+       attributes(z[[r]], "members") <- reduce(z[[r]], 
+                                            \(v, t) v + attributes(t, "members") , 
+                                            .init=0)  
+       
+      attributes(z[[r]], "height") <- height
+      attributes(z[[r]], "leaf") <- FALSE 
+      attributes(z[[r]], "label") <- paste(height, l, sep=sep)
+     }
+     
+     attributes(z, "label_map") <- label_map
+  }
+}
+  
+select_persistent_clusters <- function(ctree, prefix) {
+    tg <- clustree(ctree, prefix, return = "graph")
+    
+    tg %>%
+       activate(nodes) %>%
+          mutate(parent = dfs_parent(root=1,unreachable = TRUE),
+                 outdeg = local_size(order=1, mode="out", mindist = 1)) %>%
+            data.frame -> nodes.df
+    
+    n <- nrow(ctree)
+    L <- ncol(ctree)
+    cl <- rep(0L, n)
+    
+    last_col_name <- colnames(ctree)[L]
+    # remove special characters
+    last_col_name <- gsub(" ", "", last_col_name)
+    lcol_prefix <- paste0(last_col_name,"C")
+    
+    last_level_nodes <- startsWith(nodes.df$node, lcol_prefix)
+    
+    for(v in which(last_level_nodes)) {
+      lvl <- L
+      v_orig <- v
+      cl_name_orig <- as.integer(str_extract(nodes.df$node[v_orig], 
+                                             "C([0-9]+)$", group=1))
+      
+      pv <- nodes.df$parent[v]
+      # Continue to go up the tree until you hit the root
+      # or the parent has more than one child.
+      while(!is.na(pv) && nodes.df$outdeg[pv] == 1) {
+        v <- pv
+        lvl <- lvl - 1
+        pv <- nodes.df$parent[v]
+      }
+      
+      cl_name_new <-  as.integer(str_extract(nodes.df$node[v], "C([0-9]+)$", group=1))
+      are_in_cluster <- ctree[ , lvl] == cl_name_new
+      cl[are_in_cluster] <- cl_name_orig
+      cat("Orig Node:", cl_name_orig, "New Node:", cl_name_new, 
+          "Jumped to level:", lvl, "Assigned:", sum(are_in_cluster), "\n")
+    }
+    cl
+}
 
 ## The following code is modified from the
 ## clustertree (https://github.com/lazappi/clustree) package.
