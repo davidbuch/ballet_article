@@ -1,15 +1,14 @@
-library(here)
 library(tidyverse)
 library(gridExtra)
 library(dbscan)
-source(here("R/random_histogram_model.R"))
-source(here("R/density_clusterer.R"))
-source(here("R/ne_parts_pair_counting.R"))
-source(here("R/salso_custom.R"))
-source(here("R/credible_bounds.R"))
-source(here("R/simstudy_accuracy_measures.R"))
+source("R/random_histogram_model.R")
+source("R/density_clusterer.R")
+source("R/ne_parts_pair_counting.R")
+source("R/salso_custom.R")
+source("R/credible_bounds.R")
+source("R/simstudy_accuracy_measures.R")
 
-out_dir <- here("output/sky_survey_analysis")
+out_dir <- "output/sky_survey_analysis"
 
 dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
 
@@ -145,27 +144,24 @@ close(pb)
 # ----------------------------------------
 # target quantile is assumed to be known
 target_quantile <- 0.9
-target_quantiles <- seq(0.7, 1.2, by=0.1)
 
-# Heuristically determine an appropriate minPts parameter
-#approximate_number_of_clusters <- 100
-#points_per_cluster <- (1 - target_quantile)*nobs / 
-#  approximate_number_of_clusters
-#minPts <- round(points_per_cluster / 4)
-#print(sprintf("Hueristic Suggested minPts: %d", minPts))
-# Try finding an appropriate minPts algorithmically
-#minPts_options <- seq(10, 100, 10)
-#ballet_metrics <- data.frame()
-clustering_samps <- map(target_quantiles, 
-                        \(tquant) density_based_clusterer(X, f_samps, cut_quantile = tquant))
+## ---- Analysis to see the effect of varying minPts 
+
+minPts_options <- seq(10, 100, 10)
+ballet_metrics <- data.frame()
+for(minPts in minPts_options){
+  clustering_samps <- density_based_clusterer(X, 
+                                              f_samps, 
+                                              cut_quantile = target_quantile,
+                                              minPts = minPts)
   
   # Compute a quick, approximate point estimate based on this minPts value
-#  sel_active_pe <- colMeans(clustering_samps != 0) >= 0.5
-#  tmp_point_estimate <- rep(0, nobs)
-#  tmp_point_estimate[sel_active_pe] <- X[sel_active_pe,] %>%
-#    dist() %>%
-#    hclust(method = "single") %>%
-#    cutree(h = attr(clustering_samps, 'delta'))
+  sel_active_pe <- colMeans(clustering_samps != 0) >= 0.5
+  tmp_point_estimate <- rep(0, nobs)
+  tmp_point_estimate[sel_active_pe] <- X[sel_active_pe,] %>%
+    dist() %>%
+    hclust(method = "single") %>%
+    cutree(h = attr(clustering_samps, 'delta'))
   
   # Evaluate the quality of the point estimate
   ballet_metrics <- rbind(ballet_metrics,
@@ -174,27 +170,29 @@ clustering_samps <- map(target_quantiles,
                                specificity = specificity(X, tmp_point_estimate, mu)
                           ))  
 }
-# Set minPts based on the observed metrics
-minPts <- minPts_options[which.max(ballet_metrics$sensitivity + 
-                                     ballet_metrics$specificity)]
 
-png("output/sky_survey_analysis/synthdata_ballet_metrics.png", 
+# Set minPts based on the observed metrics
+# minPts <- minPts_options[which.max(ballet_metrics$sensitivity + 
+#                                      ballet_metrics$specificity)]
+
+png(file.path(out_dir, "synthdata_ballet_metrics.png"), 
     width = 5, height = 5, units = 'in', res = 300)
 ballet_metrics %>% 
   pivot_longer(c(sensitivity, specificity), 
                names_to = 'metric',
                values_to = 'score') %>%
-  ggplot() + 
+ggplot() + 
   geom_line(aes(x = minPts, y = score, color = metric)) + 
   geom_vline(xintercept = minPts, color = 'red') +
   ylim(0,1) + 
   labs(title = "BALLET Performance")
 dev.off()
 
+## ----- End of BALLET sensitivity to minPts
+
 # There's seemingly no improvement in BALLET from scanning over minPts,
 # so stick with the default from the heuristic
 minPts <- ceiling(log2(nobs)) 
-
 
 clustering_samps <- density_based_clusterer(X, 
                                             f_samps, 
@@ -253,12 +251,12 @@ p3 <- ggplot() +
        subtitle = sprintf("minPts: %d, sensitivity: %.2f, specificity: %.2f", minPts, sensitivity(X, data$ub, mu), specificity(X, data$ub, mu)),
        x = NULL, y = NULL)
 
-png("output/sky_survey_analysis/synthdata_ballet_pe.png", 
+png(file.path(out_dir, "sky_survey_analysis/synthdata_ballet_pe.png"),
     width = 5, height = 5, units = 'in', res = 300)
 p2
 dev.off()
 
-png("output/sky_survey_analysis/synthdata_ballet_bounds.png", 
+png(file.path(out_dir, "sky_survey_analysis/synthdata_ballet_bounds.png"), 
     width = 10, height = 5, units = 'in', res = 300)
 grid.arrange(p1, p3, nrow = 1)
 dev.off()
