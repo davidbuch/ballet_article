@@ -54,86 +54,6 @@ level_set_clusters <- function(x, Ef,
 }
 
 
-# M is a n x L matrix, where the 
-# column l is a vector taking {0, \ldots, k} (the cluster allocations),
-# corresponds to a sub-partition of the n data points. Here k is assumed to 
-# depend on the column l.
-# 
-# In order to form a hclust tree, will assume that the clusters are nested.
-# That is if i,j \in [n] belong to the same cluster in column l, 
-# then they also belong to the same cluster in any column l' < l
-#
-# heights is a numeric non-negative vector representing the 
-# heirarchical clustering level. 
-convert_clusts_to_tree <- function (M, heights, sep='/')
-## hang = 0.1  is default for plot.hclust
-{
-  
-  # The internal notation for the noise cluster.
-  NOISE_CLUST <- 0
-
-  if (is.null(dim(M)) || ncol(M) == 1) {
-      # If there is just one level 
-      stopifnot(length(heights) == 1, "Only one height expected")
-      height <- heights[1]
-      
-      # Identify the non-null clusters  
-      labels <- setdiff(unique(M), NOISE_CLUST)
-      
-      # Assign them in a list
-      # This is a tree with all leaves
-      z <- list(labels)
-      
-      # Set attributes of each leaf
-      for(i in seq_along(labels)) {
-        attributes(z[[i]], "members") <- 1L
-        attributes(z[[i]], "height") <- height 
-        attributes(z[[i]], "leaf") <- TRUE 
-        attributes(z[[i]], "label") <- paste(height, z[[i]], sep=sep)
-      }
-      
-      attributes(z, "label_map") <- labels
-  } else {
-    
-     M1 <- M[,1] 
-     M2 <- M[,2]
-     
-     labels1 <- setdiff(unique(M1), NOISE_CLUST)
-     labels2 <- setdiff(unique(M2), NOISE_CLUST)
-     
-     sub_tree <- convert_to_tree(M[, -1], heights[-1])
-     label_map <- attributes(sub_tree, "label_map")
-     
-     z <- list()
-     
-     # assign each node at the current level 
-     # to the correct sub_tree at the next level
-     for(r in seq_along(labels1)) {
-      
-       #The label of the current cluster
-       l <- labels1[r]
-       
-       #For each point in the current cluster
-       which(M1 == l) %>% 
-         #compute the label in the successive cluster
-         map(\(i) M2[i]) %>% unique -> succ_clusters
-       
-       z[[r]] <- keep_at(sub_tree, label_map %in% succ_clusters)
-    
-       # sum up the member values of all the subtrees
-       attributes(z[[r]], "members") <- reduce(z[[r]], 
-                                            \(v, t) v + attributes(t, "members") , 
-                                            .init=0)  
-       
-      attributes(z[[r]], "height") <- height
-      attributes(z[[r]], "leaf") <- FALSE 
-      attributes(z[[r]], "label") <- paste(height, l, sep=sep)
-     }
-     
-     attributes(z, "label_map") <- label_map
-  }
-}
-  
 select_persistent_clusters <- function(ctree, prefix) {
     tg <- clustree(ctree, prefix, return = "graph")
     
@@ -177,7 +97,7 @@ select_persistent_clusters <- function(ctree, prefix) {
     }
     cl
 }
-
+#
 ## The following code is modified from the
 ## clustertree (https://github.com/lazappi/clustree) package.
 ## In the following, we are monkey patching the key functions from
