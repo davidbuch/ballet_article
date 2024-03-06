@@ -116,8 +116,8 @@ levels <- c(1.8*avg_density,
   opar <- par()
   png("output/sky_survey_analysis/density_plot.png", 
     width = 5, height = 5, units = 'in', res = 1000)
-  par(mfrow=c(2,3))
-  for(i in 1:6) {
+  par(mfrow=c(2,2))
+  for(i in 1:4) {
     plot_persp(levels, theta=60*i, 
                main=paste("Theta:", 60*i))
   }
