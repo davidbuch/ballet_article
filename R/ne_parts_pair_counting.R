@@ -1,4 +1,5 @@
-Rcpp::sourceCpp("src/ne_loss.cpp")
+library(here)
+Rcpp::sourceCpp(here("src/ne_loss.cpp"))
 
 compute_pst <- function(clustering_samps, 
                         color_map = function(x) ifelse(x == 0, 0, 1),

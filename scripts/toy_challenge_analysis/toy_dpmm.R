@@ -100,7 +100,7 @@ for(d in 1:length(toy_datasets)){
     Ef <- matrixStats::colMedians(fn_samps_obs)
     clusters <- level_set_clusters(x,Ef, cut_quantiles=seq(0,1,length.out=10))
     clustree(clusters, prefix="q")
-    ggsave(paste0("output/toy_challenge/clustree_", dataset_name, ".png"), 
+    ggsave(paste0("output/toy_challenge/clustree_dpmm_", dataset_name, ".png"), 
            width = 10, height = 10)
   }
   
@@ -109,6 +109,7 @@ for(d in 1:length(toy_datasets)){
   density_clustering_samps <- 
     density_based_clusterer(x, fn_samps_obs,
                             cut_quantile = quantiles[[d]])
+  rm(fn_samps_obs)
   pst <- compute_pst(density_clustering_samps)
   pdt <- compute_pdt(density_clustering_samps)
   density_pe <- salso_custom(density_clustering_samps, pst, pdt)

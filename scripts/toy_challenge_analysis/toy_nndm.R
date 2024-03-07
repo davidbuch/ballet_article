@@ -7,6 +7,7 @@ source("R/density_clusterer.R")
 source("R/ne_parts_pair_counting.R")
 source("R/salso_custom.R")
 source("R/credible_bounds.R")
+source("R/choose_lambda.R")
 Rcpp::sourceCpp("src/subpartiton_min_max.cpp")
 dir.create('output/toy_challenge', recursive = TRUE, showWarnings = FALSE)
 
@@ -22,12 +23,10 @@ toy_datasets <- list(
   tsne = tsne
 )
 
-ballet_params <- list(
-  two_moons = list(minPts = 5, cut_quantile = 0.08, split_err_prob = 0.01),
-  circles = list(minPts = 5, cut_quantile = 0.025, split_err_prob = 0.01),
-  tsne = list(minPts = floor((nrow(tsne)/nrow(circles))*5), 
-              cut_quantile = 0.08, split_err_prob = 0.01)
-)
+visualize_cluster_tree <- FALSE #TRUE
+quantiles <- list(tsne =  0.15,
+                  two_moons = 0.08,
+                  circles = 0.025)
 
 # This Loop Will Create dataframes for each dataset that contain a variety of 
 # information we would like to plot.
@@ -47,6 +46,7 @@ for(d in 1:length(toy_datasets)){
   mu0 <- rep(0,p)
   nu0 <- 0.001
   gamma0 <- p
+  cat("Fitting NNDM Model\n")
   
   res <- mNNDM(x = x, MC = nsims, k = 10, inputpt = x, 
                mu0 = mu0, nu0 = nu0, gamma0 = p)
@@ -61,12 +61,20 @@ for(d in 1:length(toy_datasets)){
   plot_grid$f_s2 <- fn_samps_grid[nsims,]
   rm(fn_samps_grid)
   
+  if (visualize_cluster_tree) {
+    cat("Visualizing Cluster Tree for BALLET\n")
+    Ef <- matrixStats::colMedians(fn_samps_obs)
+    clusters <- level_set_clusters(x,Ef, cut_quantiles=seq(0,1,length.out=10))
+    clustree(clusters, prefix="q")
+    ggsave(paste0("output/toy_challenge/clustree_nndm_", dataset_name, ".png"), 
+           width = 10, height = 10)
+  }
+  
+  cat("Finding BALLET density based-clusters\n")
   # Get the Density-Based Cluster Allocations and Our Credible Bounds
   density_clustering_samps <- 
     density_based_clusterer(x, fn_samps_obs,
-                            minPts = ballet_params[[d]][['minPts']],
-                            cut_quantile = ballet_params[[d]][['cut_quantile']], 
-                            split_err_prob = ballet_params[[d]][['split_err_prob']])
+                            cut_quantile = quantiles[[d]])
   rm(fn_samps_obs)
   pst <- compute_pst(density_clustering_samps)
   pdt <- compute_pdt(density_clustering_samps)

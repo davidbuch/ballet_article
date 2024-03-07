@@ -36,10 +36,19 @@ level_set_clust <- function(cut_quantile, x, Ef, delta, dists=NULL) {
 # This function estimates a cluster tree based on 
 # data x (n x p matrix), a density estimate Ef (length n vector),
 # and a collection of quantiles cut_quantiles.
+#
+# The output of this function is a n X L matrix, where each 
+# column represents cluster allocation vector at a fixed level. 
+# After giving an informative name to the columns of the output 
+# (i.e. the levels), you can pass this matrix to the 
+# clustree() function in the clustree package for visualization
+# and further processing.
 level_set_clusters <- function(x, Ef, 
                                cut_quantiles=seq(0, 1, by = 0.1), 
-                               deltas=NULL,
-                               prefix="cut=") {
+                               deltas=NULL) {	
+
+    if(is.unsorted(cut_quantiles)) stop("cut_quantile must be increasing.")
+
     dists <- dist(x)
     if(is.null(deltas)) {
       deltas <- delta_given_quantiles(x, Ef, cut_quantiles)
@@ -51,12 +60,10 @@ level_set_clusters <- function(x, Ef,
                                 dists=dists), .progress=TRUE) %>%  
       do.call(cbind, .) -> clusters  
 
-    colnames(clusters) <- sprintf("%s%.3f", prefix, cut_quantiles)
     clusters
 }
 
-
-
+#
 ## The following code is modified from the
 ## clustertree (https://github.com/lazappi/clustree) package.
 ## In the following, we are monkey patching the key functions from
@@ -198,3 +205,58 @@ assignInNamespace("get_tree_nodes",
 assignInNamespace("get_tree_edges",
                   get_tree_edges_p,
                   ns = "clustree")
+# End of Monkey patching the clustree package...
+
+# Code to compute persistent clusters.
+# ctree is an n x L matrix, where each column represents 
+# a clustering allocation vector. This matrix can be obtained
+# as an output of the level_set_clusters function, or it can 
+# be obtained by concatinating L different clusterings.
+# We assume that the different clusterings be nested.
+select_persistent_clusters <- function(ctree, prefix) {
+
+    #Leverage the clustree package to get a GGraph object
+    # representing the clustering tree clustree
+    tg <- clustree(ctree, prefix, return = "graph")
+    
+    tg %>%
+       activate(nodes) %>%
+          mutate(parent = dfs_parent(root=1,unreachable = TRUE),
+                 outdeg = local_size(order=1, mode="out", mindist = 1)) %>%
+            data.frame -> nodes.df
+    
+    n <- nrow(ctree)
+    L <- ncol(ctree)
+    cl <- rep(0L, n)
+    
+    last_col_name <- colnames(ctree)[L]
+    # remove special characters
+    last_col_name <- gsub(" ", "", last_col_name)
+    lcol_prefix <- paste0(last_col_name,"C")
+    
+    # Persistent Clustering Algorithm
+    last_level_nodes <- startsWith(nodes.df$node, lcol_prefix)
+    
+    for(v in which(last_level_nodes)) {
+      lvl <- L
+      v_orig <- v
+      cl_name_orig <- as.integer(str_extract(nodes.df$node[v_orig], 
+                                             "C([0-9]+)$", group=1))
+      
+      pv <- nodes.df$parent[v]
+      # Continue to go up the tree until you hit the root
+      # or the parent has more than one child.
+      while(!is.na(pv) && nodes.df$outdeg[pv] == 1) {
+        v <- pv
+        lvl <- lvl - 1
+        pv <- nodes.df$parent[v]
+      }
+      
+      cl_name_new <-  as.integer(str_extract(nodes.df$node[v], "C([0-9]+)$", group=1))
+      are_in_cluster <- ctree[ , lvl] == cl_name_new
+      cl[are_in_cluster] <- cl_name_orig
+      cat("Orig Node:", cl_name_orig, "New Node:", cl_name_new, 
+          "Jumped to level:", lvl, "Assigned:", sum(are_in_cluster), "\n")
+    }
+    cl
+}
