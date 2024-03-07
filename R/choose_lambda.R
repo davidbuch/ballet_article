@@ -45,7 +45,10 @@ level_set_clust <- function(cut_quantile, x, Ef, delta, dists=NULL) {
 # and further processing.
 level_set_clusters <- function(x, Ef, 
                                cut_quantiles=seq(0, 1, by = 0.1), 
-                               deltas=NULL) {
+                               deltas=NULL) {	
+
+    if(is.unsorted(cut_quantiles)) stop("cut_quantile must be increasing.")
+
     dists <- dist(x)
     if(is.null(deltas)) {
       deltas <- delta_given_quantiles(x, Ef, cut_quantiles)
