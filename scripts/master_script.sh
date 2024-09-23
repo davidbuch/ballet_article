@@ -5,7 +5,7 @@
 Rscript ./scripts/data_processing/edsgc_processing.R
 Rscript ./scripts/data_processing/toy_data_processing.R
 
-# --- Generate the illustration in Figure 1 ---
+# --- Generate the illustration in Figure 1 and a supplemntary toy figure.  ---
 
 Rscript ./scripts/illustrations/gaussian_splitting_example.R
 Rscript ./scripts/illustrations/univariate_different_levels.R

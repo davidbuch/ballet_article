@@ -227,7 +227,7 @@ zealous_updates <- function(labels,
   distinct_clusters <- distinct(labels)
   
   # randomly select a cluster to destroy
-  target <- distinct_clusters %>% slice_sample(n = 1)
+  target <- distinct_clusters %>% dplyr::slice_sample(n = 1)
 
   # create flat versions of the labels and target
   flat_labels <- flatten_labels(labels)
