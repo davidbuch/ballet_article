@@ -16,8 +16,9 @@ install.packages("usedist")
 install.packages("clustree")
 install.packages("bench")
 
-
 install.packages("devtools")
 devtools::install_github("sarawade/mcclust.ext")
 devtools::install_github("shounakchattopadhyay/NN-DM")
 devtools::install_github("MaStatLab/PTT")
+devtools::install_github("etam4260/kneedle")
+
