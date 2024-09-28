@@ -152,11 +152,13 @@ Ef <- matrixStats::colMedians(fsamps)
 ## log to clearly see this value. 
 ##
 ## Now let's see what value we obtain using our estimated densities
-rank_and_den <- kneedle(rank(Ef), Ef)
-plot(rank(Ef), log(Ef), xlab="ranks", ylab="sorted log(density)")
-abline(v=rank_and_den[1], col="red")
-cut_quantile <- rank_and_den[1]/length(Ef)  #0.017
-# Thus we declare 1.7% of the observations as noise..
+rank_and_den <- kneedle(rank(Ef), log(Ef), decreasing = FALSE, concave = TRUE)
+qplot(rank(Ef), log(Ef), xlab="ranks", ylab="sorted log(density)") + 
+  geom_vline(xintercept=rank_and_den[1], col="red")
+ggsave(paste0("output/illustrations/level_selection_elbow.png"), 
+       width = 10, height = 10)
+cut_quantile <- rank_and_den[1]/length(Ef)  #0.022
+# Thus we declare 2.2% of the observations as noise..
 
 ## Another diagnostic is the number of clusters. 
 ## If we obtain a single cluster.
