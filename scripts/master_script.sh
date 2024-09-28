@@ -25,9 +25,9 @@ Rscript ./scripts/toy_challenge_analysis/toy_dpmm.R
 Rscript ./scripts/toy_challenge_analysis/toy_apt.R
 Rscript ./scripts/toy_challenge_analysis/toy_nndm.R
 
-## Analysis of uncertainty in these datasets based on DPMM
+## Plot the results from clustering the challenge datasets.
 
-Rscript ./scripts/toy_challenge_analysis/bound_analysis.R
+Rscript ./scripts/toy_challenge_analysis/toy_plotting.R
  
 # --- Analysis of the astronomical sky survey data in Section 6 ---
 
