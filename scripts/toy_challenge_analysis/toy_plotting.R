@@ -7,28 +7,73 @@ source("R/rearrange_labels.R")
 # --------------------------------
 # PART I: DPMM PLOTS
 # --------------------------------
+
+split_df_by_levels <- function(plot_obs) {
+  
+  lvls <- str_match(colnames(plot_obs), 'db_pe_(.+)$')[,2]
+  lvls <- lvls[!is.na(lvls)]
+
+  plot_obs_list <- rep(list(NULL), length(lvls))
+
+  for(i in seq_along(lvls)) {
+    suffix <- lvls[i]
+    plot_obs_list[[i]] <- rename_with(
+      plot_obs,
+      .fn = \(colnames) str_remove(colnames, paste0("_",suffix)),
+      .cols = ends_with(suffix))
+  }
+  
+  #names(plot_obs_list) <- lvls
+  
+  plot_obs_list
+}
+
+# Rearrange labels to facilitate better color discrimination among the largest clusters
+prep_labels <- function(plot_obs) {
+  label_columns <- setdiff(colnames(plot_obs), c('x', 'y', 'f_pe'))
+  for(lc in label_columns){
+    
+    noise_frac <- attr(plot_obs[[lc]], 'noise_frac')
+    
+    plot_obs[[lc]] <- rearrange_labels(plot_obs[[lc]])
+    plot_obs[[lc]] <- factor(plot_obs[[lc]], 
+                             levels = 1:max(plot_obs[[lc]]))
+    
+    if(!is.null(noise_frac)) {
+      attr(plot_obs[[lc]], 'noise_frac') <- noise_frac
+    }
+  }
+  return(plot_obs)
+}
+
+# The final pre-processing
+process <- function(plot_obs) {
+  
+  # separate the elbow and non-elbow estimates.
+  plot_obs |> 
+    split_df_by_levels() |> 
+      map(prep_labels) 
+}
+
 # Load the Plotting Objects
-plot_obs_tm <- readRDS("output/toy_challenge/plot_obs_dpmm_two_moons.rds")
-plot_obs_nc <- readRDS("output/toy_challenge/plot_obs_dpmm_circles.rds")
-plot_obs_ts <- readRDS("output/toy_challenge/plot_obs_dpmm_tsne.rds")
+
+readRDS("output/toy_challenge/plot_obs_dpmm_two_moons.rds") |>
+  process() -> plot_obs_tm_ls
+plot_obs_tm <- plot_obs_tm_ls[[1]]
+
+readRDS("output/toy_challenge/plot_obs_dpmm_circles.rds") |>
+  process() -> plot_obs_nc_ls
+plot_obs_nc <- plot_obs_nc_ls[[1]]
+
+readRDS("output/toy_challenge/plot_obs_dpmm_tsne.rds") |>
+  process() -> plot_obs_ts_ls
+plot_obs_ts <- plot_obs_ts_ls[[1]]
+
 
 plot_grid_tm <- readRDS("output/toy_challenge/plot_grid_dpmm_two_moons.rds")
 plot_grid_nc <- readRDS("output/toy_challenge/plot_grid_dpmm_circles.rds")
 plot_grid_ts <- readRDS("output/toy_challenge/plot_grid_dpmm_tsne.rds")
 
-# Rearrange labels to facilitate better color discrimination among the largest clusters
-prep_labels <- function(plot_obs){
-  label_columns <- setdiff(colnames(plot_obs), c('x', 'y', 'f_pe'))
-  for(lc in label_columns){
-    plot_obs[[lc]] <- rearrange_labels(plot_obs[[lc]])
-    plot_obs[[lc]] <- factor(plot_obs[[lc]], 
-                             levels = 1:max(plot_obs[[lc]]))
-  }
-  return(plot_obs)
-}
-plot_obs_tm <- prep_labels(plot_obs_tm)
-plot_obs_nc <- prep_labels(plot_obs_nc)
-plot_obs_ts <- prep_labels(plot_obs_ts)
 
 # Plot coloring palette creation function
 gg_color_hue <- function(n) {
@@ -42,19 +87,27 @@ color_vals_tm <- c(gg_color_hue(6),
 color_vals_ts <- c(gg_color_hue(10), 
                    rep(RColorBrewer::brewer.pal(4, 'Greens'), 1000))
 
-# Function to help us set plot titles based on cluster richness
+# Function to help us set plot titles based on cluster richness 
+# and noise fraction (if provided)
 ktitle <- function(x) {
-  sprintf("K = %d (%d)", nlevels(x), sum(table(x) > 1))
+  if (is.null(attr(x,"noise_frac"))) {
+    sprintf("K = %d (%d)", nlevels(x), sum(table(x) > 1))
+  } else {
+    sprintf("K = %d (%d), noise level: %.1f%%", nlevels(x), 
+            sum(table(x) > 1), 100*attr(x,"noise_frac"))
+  }
 }
 
 # First we will visualize:
 # - Density contours and heatplots
 # - Model based cluster allocations
 # - Density based cluster allocations
+
 pf_tm <- ggplot(plot_grid_tm) +   
   geom_contour_filled(aes(x = x, y = y, z = f_pe)) + 
   guides(fill = 'none') + 
   labs(x = NULL, y = NULL)
+
 pf_ts <- ggplot(plot_grid_ts) +   
   geom_contour_filled(aes(x = x, y = y, z = f_pe)) + 
   guides(fill = 'none') + 
@@ -75,6 +128,7 @@ pmc_ts <- ggplot(plot_obs_ts) +
   guides(color = 'none') + 
   theme(plot.title = element_text(size=9)) +
   labs(title = ktitle(plot_obs_ts$mm_pe), x = NULL, y = NULL)
+
 
 pdc_tm <- ggplot() + 
   geom_point(aes(x = x, y = y, color = db_pe), 
@@ -99,7 +153,8 @@ pdc_ts <- ggplot() +
   scale_color_manual(na.value = "black", values = color_vals_ts) +
   guides(color = 'none') + 
   theme(plot.title = element_text(size=9)) +
-  labs(title = ktitle(plot_obs_ts$db_pe), x = NULL, y = NULL)
+  labs(title = ktitle(plot_obs_ts$db_pe), 
+       x = NULL, y = NULL)
 
 png("output/toy_challenge/compare_clusterings_dpmm.png", 
     width = 12, height = 8, units = 'in', res = 300)
@@ -323,16 +378,23 @@ plot_grid_ts_nndm <- readRDS("output/toy_challenge/plot_grid_nndm_tsne.rds")
 plot_grid_nc_apt <- readRDS("output/toy_challenge/plot_grid_apt_circles.rds")
 plot_grid_nc_nndm<- readRDS("output/toy_challenge/plot_grid_nndm_circles.rds")
 
-plot_obs_tm_apt <- prep_labels(readRDS("output/toy_challenge/plot_obs_apt_two_moons.rds"))
-plot_obs_tm_nndm<- prep_labels(readRDS("output/toy_challenge/plot_obs_nndm_two_moons.rds"))
-plot_obs_ts_apt <- prep_labels(readRDS("output/toy_challenge/plot_obs_apt_tsne.rds"))
-plot_obs_ts_nndm <- prep_labels(readRDS("output/toy_challenge/plot_obs_nndm_tsne.rds"))
-plot_obs_nc_apt <- prep_labels(readRDS("output/toy_challenge/plot_obs_apt_circles.rds"))
-plot_obs_nc_nndm<- prep_labels(readRDS("output/toy_challenge/plot_obs_nndm_circles.rds"))
+readRDS("output/toy_challenge/plot_obs_apt_two_moons.rds") |> 
+    process() -> plot_obs_tm_apt_ls
 
-plot_obs_ts <- readRDS("output/toy_challenge/plot_obs_dpmm_tsne2.rds")
-plot_obs_ts <- prep_labels(plot_obs_ts)
+readRDS("output/toy_challenge/plot_obs_nndm_two_moons.rds") |>
+    process() -> plot_obs_tm_nndm_ls
 
+readRDS("output/toy_challenge/plot_obs_apt_tsne.rds") |>
+    process() -> plot_obs_ts_apt_ls
+
+readRDS("output/toy_challenge/plot_obs_nndm_tsne.rds") |>
+    process() -> plot_obs_ts_nndm_ls
+
+readRDS("output/toy_challenge/plot_obs_apt_circles.rds") |>
+    process() -> plot_obs_nc_apt_ls
+
+readRDS("output/toy_challenge/plot_obs_nndm_circles.rds") |>
+    process() -> plot_obs_nc_nndm_ls
 
 # Density Estimate Plots (there should be 9 of them)
 pf_tm_dpmm <- ggplot(plot_grid_tm) +   
@@ -405,141 +467,98 @@ grid.arrange(
 dev.off()
 
 # Density clustering plots (there should be 9 of them)
-pdc_tm_dpmm <- ggplot() + 
-  geom_point(aes(x = x, y = y, color = db_pe), 
-             size = 0.5, data = plot_obs_tm) + 
-  geom_contour(aes(x = x, y = y, z = f_pe), 
-               breaks = quantile(plot_obs_tm$f_pe, 0.125), 
-               col = 'black',
-               data = plot_grid_tm) + 
-  scale_color_manual(na.value = "black", values = color_vals_tm) +
-  guides(color = 'none') + 
-  theme(plot.title = element_text(size=9)) +
-  labs(title = ktitle(plot_obs_tm$db_pe), x = NULL, y = NULL)
 
-pdc_nc_dpmm <- ggplot() + 
-  geom_point(aes(x = x, y = y, color = db_pe), 
-             size = 0.5, data = plot_obs_nc) + 
-  geom_contour(aes(x = x, y = y, z = f_pe), 
-               breaks = quantile(plot_obs_nc$f_pe, 0.02),
-               col = 'black',
-               data = plot_grid_nc) + 
-  scale_color_manual(na.value = "black", values = color_vals_nc) +
-  guides(color = 'none') + 
-  theme(plot.title = element_text(size=9)) +
-  labs(title = ktitle(plot_obs_nc$db_pe), x = NULL, y = NULL)
+plot_func <- function(plot_obs, plot_grid, color_vals, 
+                      size=0.5, break_thresh=0.125) {
+  ggplot() + 
+    geom_point(aes(x = x, y = y, color = db_pe), 
+               size = size, data = plot_obs) + 
+    geom_contour(aes(x = x, y = y, z = f_pe), 
+                 breaks = quantile(plot_obs$f_pe, break_thresh), 
+                 col = 'black',
+                 data = plot_grid) + 
+    scale_color_manual(na.value = "black", values = color_vals) +
+    guides(color = 'none') + 
+    theme(plot.title = element_text(size=9)) +
+    labs(title = ktitle(plot_obs$db_pe), x = NULL, y = NULL)
+}
 
-pdc_ts_dpmm <- ggplot() + 
-  geom_point(aes(x = x, y = y, color = db_pe), 
-             size = 0.25, data = plot_obs_ts) + 
-  ggforce::geom_mark_hull(
-    aes(x = x, y = y, group = db_pe), 
-    expand = 1e-2,
-    radius = 1e-2,
-    concavity = 2,
-    data = plot_obs_ts %>% filter(db_pe != 0)) +
-  scale_color_manual(na.value = "black", values = color_vals_ts) +
-  guides(color = 'none') + 
-  theme(plot.title = element_text(size=9)) +
-  labs(title = ktitle(plot_obs_ts$db_pe), x = NULL, y = NULL)
+plot_func_tsne <- function(plot_obs, size=0.25) {
+    ggplot() + 
+      geom_point(aes(x = x, y = y, color = db_pe), 
+                 size = size, data = plot_obs) + 
+      ggforce::geom_mark_hull(
+        aes(x = x, y = y, group = db_pe), 
+        expand = 1e-2,
+        radius = 1e-2,
+        concavity = 2,
+        data = plot_obs %>% filter(db_pe != 0)) +
+      scale_color_manual(na.value = "black", values = color_vals_ts) +
+      guides(color = 'none') + 
+      theme(plot.title = element_text(size=9)) +
+      labs(title = ktitle(plot_obs$db_pe), x = NULL, y = NULL)
+}
 
-pdc_tm_apt <- ggplot() + 
-  geom_point(aes(x = x, y = y, color = db_pe), 
-             size = 0.5, data = plot_obs_tm_apt) + 
-  geom_contour(aes(x = x, y = y, z = f_pe), 
-               breaks = quantile(plot_obs_tm_apt$f_pe, 0.08), 
-               col = 'black',
-               data = plot_grid_tm_apt) + 
-  scale_color_manual(na.value = "black", values = color_vals_tm) +
-  guides(color = 'none') + 
-  theme(plot.title = element_text(size=9)) +
-  labs(title = ktitle(plot_obs_tm_apt$db_pe), x = NULL, y = NULL)
+plot_across_density_models <- function(two_moons_lvl=1,
+                                       circles_lvl=1,
+                                       tsne_lvl=1) {
+  
+  pdc_tm_dpmm <- plot_func(plot_obs_tm_ls[[two_moons_lvl]], plot_grid_tm, color_vals_tm, 
+                           size=0.5,  break_thresh=0.125)
+  
+  pdc_nc_dpmm <- plot_func(plot_obs_nc_ls[[circles_lvl]], plot_grid_nc, color_vals_nc, 
+                           size=0.5,  break_thresh=0.02)
+  
+  pdc_ts_dpmm <- plot_func_tsne(plot_obs_ts_ls[[tsne_lvl]], size=0.25)
+  
+  pdc_tm_apt <- plot_func(plot_obs_tm_apt_ls[[two_moons_lvl]], 
+                          plot_grid_tm_apt, color_vals_tm,
+                          size = 0.5, break_thresh = 0.08)
+  
+  pdc_nc_apt <- plot_func(plot_obs_nc_apt_ls[[circles_lvl]], plot_grid_nc_apt, color_vals_nc,
+                          size = 0.5, break_thresh = 0.02)
+  
+  pdc_ts_apt <- plot_func_tsne(plot_obs_ts_apt_ls[[tsne_lvl]], size=0.25)
+  
+  
+  pdc_tm_nndm <- plot_func(plot_obs_tm_nndm_ls[[two_moons_lvl]], plot_grid_tm_nndm, color_vals_tm,
+                          size = 0.5, break_thresh = 0.08)
+  
+  
+  pdc_nc_nndm <- plot_func(plot_obs_nc_nndm_ls[[circles_lvl]], plot_grid_nc_nndm, color_vals_nc,
+                           size = 0.5, break_thresh = 0.02)
+  
+  pdc_ts_nndm <- plot_func_tsne(plot_obs_ts_nndm_ls[[tsne_lvl]], size=0.25)
 
-pdc_nc_apt <- ggplot() + 
-  geom_point(aes(x = x, y = y, color = db_pe), 
-             size = 0.5, data = plot_obs_nc_apt) + 
-  geom_contour(aes(x = x, y = y, z = f_pe), 
-               breaks = quantile(plot_obs_nc_apt$f_pe, 0.02),
-               col = 'black',
-               data = plot_grid_nc_apt) + 
-  scale_color_manual(na.value = "black", values = color_vals_nc) +
-  guides(color = 'none') + 
-  theme(plot.title = element_text(size=9)) +
-  labs(title = ktitle(plot_obs_nc_apt$db_pe), x = NULL, y = NULL)
+  png(sprintf("output/toy_challenge/compare_ballet_clusterings-%d-%d-%d.png", 
+              two_moons_lvl, circles_lvl, tsne_lvl), 
+      width = 12, height = 8, units = 'in', res = 300)
+  grid.arrange(
+    arrangeGrob(pdc_tm_dpmm, pdc_nc_dpmm, pdc_ts_dpmm, 
+                top = textGrob(
+                  "DP Mixture of Gaussians",
+                  gp = gpar(fontface = 3, fontsize = 14)
+                )),
+    arrangeGrob(pdc_tm_apt, pdc_nc_apt, pdc_ts_apt,
+                top = textGrob(
+                  "Adaptive Polya Tree",
+                  gp = gpar(fontface = 3, fontsize = 14)
+                )),
+    arrangeGrob(pdc_tm_nndm, pdc_nc_nndm, pdc_ts_nndm,
+                top = textGrob(
+                  "NN Dirichlet Mixture",
+                  gp = gpar(fontface = 3, fontsize = 14)
+                )),
+    top = textGrob("BALLET Clustering Point Estimates", 
+                   gp = gpar(fontsize = 18)),
+    ncol = 3
+  )
+  dev.off()
+}
 
-pdc_ts_apt <- ggplot() + 
-  geom_point(aes(x = x, y = y, color = db_pe), 
-             size = 0.25, data = plot_obs_ts_apt) + 
-  ggforce::geom_mark_hull(
-    aes(x = x, y = y, group = db_pe), 
-    expand = 1e-2,
-    radius = 1e-2,
-    concavity = 2,
-    data = plot_obs_ts_apt %>% filter(db_pe != 0)) +
-  scale_color_manual(na.value = "black", values = color_vals_ts) +
-  guides(color = 'none') + 
-  theme(plot.title = element_text(size=9)) +
-  labs(title = ktitle(plot_obs_ts_apt$db_pe), x = NULL, y = NULL)
-
-pdc_tm_nndm <- ggplot() + 
-  geom_point(aes(x = x, y = y, color = db_pe), 
-             size = 0.5, data = plot_obs_tm_nndm) + 
-  geom_contour(aes(x = x, y = y, z = f_pe), 
-               breaks = quantile(plot_obs_tm_nndm$f_pe, 0.08),
-               col = 'black',
-               data = plot_grid_tm_nndm) + 
-  scale_color_manual(na.value = "black", values = color_vals_tm) +
-  guides(color = 'none') + 
-  theme(plot.title = element_text(size=9)) +
-  labs(title = ktitle(plot_obs_tm_nndm$db_pe), x = NULL, y = NULL)
-
-pdc_nc_nndm <- ggplot() + 
-  geom_point(aes(x = x, y = y, color = db_pe), 
-             size = 0.5, data = plot_obs_nc_nndm) + 
-  geom_contour(aes(x = x, y = y, z = f_pe), 
-               breaks = quantile(plot_obs_nc_nndm$f_pe, 0.02),
-               col = 'black',
-               data = plot_grid_nc_nndm) + 
-  scale_color_manual(na.value = "black", values = color_vals_nc) +
-  guides(color = 'none') + 
-  theme(plot.title = element_text(size=9)) +
-  labs(title = ktitle(plot_obs_nc_nndm$db_pe), x = NULL, y = NULL)
-
-pdc_ts_nndm <- ggplot() + 
-  geom_point(aes(x = x, y = y, color = db_pe), 
-             size = 0.25, data = plot_obs_ts_nndm) + 
-  ggforce::geom_mark_hull(
-    aes(x = x, y = y, group = db_pe), 
-    expand = 1e-2,
-    radius = 1e-2,
-    concavity = 2,
-    data = plot_obs_ts_nndm %>% filter(db_pe != 0)) +
-  scale_color_manual(na.value = "black", values = color_vals_ts) +
-  guides(color = 'none') + 
-  theme(plot.title = element_text(size=9)) +
-  labs(title = ktitle(plot_obs_ts_nndm$db_pe), x = NULL, y = NULL)
-
-png("output/toy_challenge/compare_ballet_clusterings.png", 
-    width = 12, height = 8, units = 'in', res = 300)
-grid.arrange(
-  arrangeGrob(pdc_tm_dpmm, pdc_nc_dpmm, pdc_ts_dpmm, 
-              top = textGrob(
-                "DP Mixture of Gaussians",
-                gp = gpar(fontface = 3, fontsize = 14)
-              )),
-  arrangeGrob(pdc_tm_apt, pdc_nc_apt, pdc_ts_apt,
-              top = textGrob(
-                "Adaptive Polya Tree",
-                gp = gpar(fontface = 3, fontsize = 14)
-              )),
-  arrangeGrob(pdc_tm_nndm, pdc_nc_nndm, pdc_ts_nndm,
-              top = textGrob(
-                "NN Dirichlet Mixture",
-                gp = gpar(fontface = 3, fontsize = 14)
-              )),
-  top = textGrob("BALLET Clustering Point Estimates", 
-                 gp = gpar(fontsize = 18)),
-  ncol = 3
-)
-dev.off()
-
+plot_across_density_models(1,1,1)
+#plot_across_density_models(2,2,1)
+plot_across_density_models(1,1,2)
+#plot_across_density_models(2,2,2)
+plot_across_density_models(1,1,3)
+#plot_across_density_models(2,2,3)
