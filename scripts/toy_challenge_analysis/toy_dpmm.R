@@ -102,7 +102,7 @@ for(d in 1:length(toy_datasets)){
   # Determine the fraction of noise points using the elbow plot.
   # See the illustrations/gaussian_splitting_example.R for more details.
   Ef <- matrixStats::colMedians(fn_samps_obs)
-  rank_and_den <- kneedle(rank(Ef), log(Ef), decreasing=FALSE, concave = TRUE, sensitivity = 2)
+  rank_and_den <- kneedle(rank(Ef), log(Ef), decreasing=FALSE, concave = TRUE)
   #cut_quantile <- rank_and_den[1]/length(Ef)
   
   qplot(rank(Ef), log(Ef), xlab="ranks", ylab="sorted log(density)") + 
@@ -156,9 +156,9 @@ for(d in 1:length(toy_datasets)){
     res <- run_ballet(q)
   
     # Store the quantile value in the column name..  
-    plot_obs[[sprintf("db_pe_%.2f", q)]] <- res$pe
-    plot_obs[[sprintf("db_vl_%.2f", q)]] <- res$lower_bound
-    plot_obs[[sprintf("db_vu_%.2f", q)]] <- res$upper_bound
+    plot_obs[[sprintf("db_pe_%.4f", q)]] <- res$pe
+    plot_obs[[sprintf("db_vl_%.4f", q)]] <- res$lower_bound
+    plot_obs[[sprintf("db_vu_%.4f", q)]] <- res$upper_bound
   }
   
   #plot_obs$db_pe <- res$pe

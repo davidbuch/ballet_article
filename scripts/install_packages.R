@@ -16,6 +16,9 @@ install.packages("usedist")
 install.packages("clustree")
 install.packages("bench")
 install.packages("R.cache")
+install.packages('latex2exp')
+install.packages('tidygraph')
+
 
 install.packages("devtools")
 devtools::install_github("sarawade/mcclust.ext")

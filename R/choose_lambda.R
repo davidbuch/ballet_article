@@ -3,6 +3,7 @@
 
 source("R/density_clusterer.R")
 library(usedist)
+library(tidyverse)
 library(tidygraph)
 
 # This function estimates the level set clustering
@@ -212,7 +213,7 @@ assignInNamespace("get_tree_edges",
 # a clustering allocation vector. This matrix can be obtained
 # as an output of the level_set_clusters function, or it can 
 # be obtained by concatinating L different clusterings.
-# We assume that the different clusterings be nested.
+# We assume that the different clusterings are nested.
 select_persistent_clusters <- function(ctree, prefix) {
 
     #Leverage the clustree package to get a GGraph object

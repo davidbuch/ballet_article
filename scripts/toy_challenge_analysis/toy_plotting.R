@@ -2,7 +2,9 @@ library(tidyverse)
 library(grid)
 library(gridExtra)
 library(concaveman)
+library(latex2exp)
 source("R/rearrange_labels.R")
+source("R/choose_lambda.R")
 
 # --------------------------------
 # PART I: DPMM PLOTS
@@ -12,6 +14,20 @@ split_df_by_levels <- function(plot_obs) {
   
   lvls <- str_match(colnames(plot_obs), 'db_pe_(.+)$')[,2]
   lvls <- lvls[!is.na(lvls)]
+  
+  # Analyze levels to decide on their ordering
+  lvls_num <- as.numeric(lvls)
+  # preset levels are in multiples of 0.05,
+  # while an elbow level will not typically be..
+  elbow_level <- which(floor(lvls_num*1000) %% 50 != 0)
+  
+  if(is.na(elbow_level)) {
+    warning("Could not find elbow level in [", paste(lvls, collapse = ","),"]")
+  } else {
+    lvls_num[elbow_level] <- NA
+  }
+  
+  lvls <- lvls[rank(-lvls_num, na.last = TRUE)]
 
   plot_obs_list <- rep(list(NULL), length(lvls))
 
@@ -91,11 +107,15 @@ color_vals_ts <- c(gg_color_hue(10),
 # and noise fraction (if provided)
 ktitle <- function(x) {
   if (is.null(attr(x,"noise_frac"))) {
-    sprintf("K = %d (%d)", nlevels(x), sum(table(x) > 1))
+    extra = ""
   } else {
-    sprintf("K = %d (%d), noise level: %.1f%%", nlevels(x), 
-            sum(table(x) > 1), 100*attr(x,"noise_frac"))
+    if (is.na(attr(x,"noise_frac"))) {
+      extra = "Persistent clusters"
+    } else {
+      extra = sprintf("noise level: %.1f%%",100*attr(x,"noise_frac"))
+    }
   }
+  sprintf("K = %d (%d) %s", nlevels(x), sum(table(x) > 1), extra)
 }
 
 # First we will visualize:
@@ -128,7 +148,6 @@ pmc_ts <- ggplot(plot_obs_ts) +
   guides(color = 'none') + 
   theme(plot.title = element_text(size=9)) +
   labs(title = ktitle(plot_obs_ts$mm_pe), x = NULL, y = NULL)
-
 
 pdc_tm <- ggplot() + 
   geom_point(aes(x = x, y = y, color = db_pe), 
@@ -294,74 +313,137 @@ dev.off()
 
 # Finally we will visualize density-based clusterings and 
 # credible bounds for each dataset
-pvl_tm <- ggplot() + 
-  geom_point(aes(x = x, y = y, color = db_vl),
-             size = 0.5, data = plot_obs_tm) + 
-  geom_contour(aes(x = x, y = y, z = f_pe), 
-               breaks = 0.09, col = 'black',
-               data = plot_grid_tm) + 
-  scale_color_manual(na.value = "black", values = color_vals_tm) +
-  guides(color = 'none') + 
-  theme(plot.title = element_text(size=9)) +
-  labs(title = ktitle(plot_obs_tm$db_vl), x = NULL, y = NULL)
 
-pvl_ts <- ggplot() + 
-  geom_point(aes(x = x, y = y, color = db_vl), 
-             size = 0.25, data = plot_obs_ts) + 
-  ggforce::geom_mark_hull(
-    aes(x = x, y = y, group = db_vl), 
-    expand = 1e-2,
-    radius = 1e-2,
-    concavity = 2,
-    data = plot_obs_ts %>% filter(db_vl != 0)) +
-  scale_color_manual(na.value = "black", values = color_vals_ts) + 
-  guides(color = 'none') + 
-  theme(plot.title = element_text(size=9)) +
-  labs(title = ktitle(plot_obs_ts$db_vl), x = NULL, y = NULL)
+plot_obj_ballet_bounds_two_moons <- function(lvl=1) {
+  
+  plot_obs_tm <- plot_obs_tm_ls[[lvl]]
+  
+  pvl_tm <- ggplot() + 
+    geom_point(aes(x = x, y = y, color = db_vl),
+               size = 0.5, data = plot_obs_tm) + 
+    geom_contour(aes(x = x, y = y, z = f_pe), 
+                 breaks = 0.09, col = 'black',
+                 data = plot_grid_tm) + 
+    scale_color_manual(na.value = "black", values = color_vals_tm) +
+    guides(color = 'none') + 
+    theme(plot.title = element_text(size=9)) +
+    labs(title = ktitle(plot_obs_tm$db_vl), x = NULL, y = NULL)
 
-pvu_tm <- ggplot() + 
-  geom_point(aes(x = x, y = y, color = db_vu),
-             size = 0.5, data = plot_obs_tm) + 
-  geom_contour(aes(x = x, y = y, z = f_pe), 
-               breaks = 0.09, col = 'black',
-               data = plot_grid_tm) +
-  scale_color_manual(na.value = "black", values = color_vals_tm) + 
-  guides(color = 'none') + 
-  theme(plot.title = element_text(size=9)) +
-  labs(title = ktitle(plot_obs_tm$db_vu), x = NULL, y = NULL)
 
-pvu_ts <- ggplot() + 
-  geom_point(aes(x = x, y = y, color = db_vu), 
-             size = 0.25, data = plot_obs_ts) + 
-  ggforce::geom_mark_hull(
-    aes(x = x, y = y, group = db_vu), 
-    expand = 1e-2,
-    radius = 1e-2,
-    concavity = 2,
-    data = plot_obs_ts %>% filter(db_vu != 0)) +
-  scale_color_manual(na.value = "black", values = color_vals_ts) + 
-  guides(color = 'none') + 
-  theme(plot.title = element_text(size=9)) +
-  labs(title = ktitle(plot_obs_ts$db_vu), x = NULL, y = NULL)
+  pvu_tm <- ggplot() + 
+    geom_point(aes(x = x, y = y, color = db_vu),
+               size = 0.5, data = plot_obs_tm) + 
+    geom_contour(aes(x = x, y = y, z = f_pe), 
+                 breaks = 0.09, col = 'black',
+                 data = plot_grid_tm) +
+    scale_color_manual(na.value = "black", values = color_vals_tm) + 
+    guides(color = 'none') + 
+    theme(plot.title = element_text(size=9)) +
+    labs(title = ktitle(plot_obs_tm$db_vu), x = NULL, y = NULL)
+  
+  list(lower=pvl_tm, upper=pvu_tm)
+}
 
-png("output/toy_challenge/ballet_bounds_dpmm.png", 
-    width = 12, height = 4, units = 'in', res = 300)
+
+p1 <- plot_obj_ballet_bounds_two_moons(1)
+p2 <- plot_obj_ballet_bounds_two_moons(2)
+
+png(sprintf("output/toy_challenge/ballet_bounds_dpmm_two_moons.png"),
+    width = 12, height = 8, units = 'in', res = 300)
 grid.arrange(
-  arrangeGrob(pvl_ts, 
+  arrangeGrob(p1$lower, 
               top = textGrob(
                 "Lower Bound",
                 gp = gpar(fontface = 3, fontsize = 14)
               )),
-  # arrangeGrob(pdc_ts, 
-  #             top = textGrob(
-  #               "Point Estimate",
-  #               gp = gpar(fontface = 3, fontsize = 14)
-  #             )),
-  arrangeGrob(pvu_ts,
+  arrangeGrob(p1$upper,
               top = textGrob(
                 "Upper Bound",
                 gp = gpar(fontface = 3, fontsize = 14)
               )),
+  arrangeGrob(p2$lower),
+  arrangeGrob(p2$upper),
+  top = textGrob("BALLET Clustering - Credible Bounds - Two Moons", 
+                 gp = gpar(fontsize = 18)),
+  ncol = 2
+)
+dev.off()
+
+
+plot_obj_ballet_bounds_tsne <- function(lvl=1, file_suffix=sprintf("-%d",lvl)) {
+  
+  plot_obs_ts <- plot_obs_ts_ls[[lvl]]
+  
+  pvl_ts <- ggplot() + 
+    geom_point(aes(x = x, y = y, color = db_vl), 
+               size = 0.25, data = plot_obs_ts) + 
+    ggforce::geom_mark_hull(
+      aes(x = x, y = y, group = db_vl), 
+      expand = 1e-2,
+      radius = 1e-2,
+      concavity = 2,
+      data = plot_obs_ts %>% filter(db_vl != 0)) +
+    scale_color_manual(na.value = "black", values = color_vals_ts) + 
+    guides(color = 'none') + 
+    theme(plot.title = element_text(size=9)) +
+    labs(title = ktitle(plot_obs_ts$db_vl), x = NULL, y = NULL)
+  
+  pvu_ts <- ggplot() + 
+    geom_point(aes(x = x, y = y, color = db_vu), 
+               size = 0.25, data = plot_obs_ts) + 
+    ggforce::geom_mark_hull(
+      aes(x = x, y = y, group = db_vu), 
+      expand = 1e-2,
+      radius = 1e-2,
+      concavity = 2,
+      data = plot_obs_ts %>% filter(db_vu != 0)) +
+    scale_color_manual(na.value = "black", values = color_vals_ts) + 
+    guides(color = 'none') + 
+    theme(plot.title = element_text(size=9)) +
+    labs(title = ktitle(plot_obs_ts$db_vu), x = NULL, y = NULL)
+  
+  list(lower=pvl_ts, upper=pvu_ts)
+}
+
+p1 <- plot_obj_ballet_bounds_tsne(1)
+p2 <- plot_obj_ballet_bounds_tsne(2)
+p3 <- plot_obj_ballet_bounds_tsne(3)
+
+
+png("output/toy_challenge/ballet_bounds_dpmm_tsne.png",
+    width = 12, height = 4, units = 'in', res = 300)
+grid.arrange(
+  arrangeGrob(p1$lower, 
+              top = textGrob(
+                "Lower Bound",
+                gp = gpar(fontface = 3, fontsize = 14)
+              )),
+  arrangeGrob(p1$upper,
+              top = textGrob(
+                "Upper Bound",
+                gp = gpar(fontface = 3, fontsize = 14)
+              )),
+  top = textGrob("BALLET Clustering - Credible Bounds", 
+                 gp = gpar(fontsize = 18)),
+  ncol = 2
+)
+dev.off()
+
+png("output/toy_challenge/ballet_bounds_dpmm_tsne_lvls.png",
+    width = 12, height = 8, units = 'in', res = 300)
+grid.arrange(
+  arrangeGrob(p2$lower, 
+              top = textGrob(
+                "Lower Bound",
+                gp = gpar(fontface = 3, fontsize = 14)
+              )),
+  arrangeGrob(p2$upper,
+              top = textGrob(
+                "Upper Bound",
+                gp = gpar(fontface = 3, fontsize = 14)
+              )),
+  arrangeGrob(p3$lower),
+  arrangeGrob(p3$upper),
   top = textGrob("BALLET Clustering - Credible Bounds", 
                  gp = gpar(fontsize = 18)),
   ncol = 2
@@ -499,39 +581,54 @@ plot_func_tsne <- function(plot_obs, size=0.25) {
       labs(title = ktitle(plot_obs$db_pe), x = NULL, y = NULL)
 }
 
-plot_across_density_models <- function(two_moons_lvl=1,
-                                       circles_lvl=1,
-                                       tsne_lvl=1) {
+plot_across_density_models <- function(two_moons_lvl=1, circles_lvl=1, tsne_lvl=1,
+                                      file_suffix=sprintf("%d-%d-%d", 
+                                                      two_moons_lvl, 
+                                                      circles_lvl,
+                                                      tsne_lvl)) {
   
-  pdc_tm_dpmm <- plot_func(plot_obs_tm_ls[[two_moons_lvl]], plot_grid_tm, color_vals_tm, 
-                           size=0.5,  break_thresh=0.125)
+  safely_get_index <- function(ls, index) {
+    N <- length(ls)
+    
+    if( index < 0 || index > N ) {
+      warning("Index out of bounds. Safely truncating it.")
+      index <- max(min(N, index), 0)
+    }
+    
+    ls[[index]]
+  }
   
-  pdc_nc_dpmm <- plot_func(plot_obs_nc_ls[[circles_lvl]], plot_grid_nc, color_vals_nc, 
-                           size=0.5,  break_thresh=0.02)
+  pdc_tm_dpmm <- plot_func(safely_get_index(plot_obs_tm_ls, two_moons_lvl), 
+                           plot_grid_tm, color_vals_tm, size=0.5,  break_thresh=0.125)
   
-  pdc_ts_dpmm <- plot_func_tsne(plot_obs_ts_ls[[tsne_lvl]], size=0.25)
+  pdc_nc_dpmm <- plot_func(safely_get_index(plot_obs_nc_ls, circles_lvl), 
+                           plot_grid_nc, color_vals_nc, size=0.5,  break_thresh=0.02)
   
-  pdc_tm_apt <- plot_func(plot_obs_tm_apt_ls[[two_moons_lvl]], 
+  pdc_ts_dpmm <- plot_func_tsne(safely_get_index(plot_obs_ts_ls, tsne_lvl), size=0.25)
+  
+  pdc_tm_apt <- plot_func(safely_get_index(plot_obs_tm_apt_ls,two_moons_lvl), 
                           plot_grid_tm_apt, color_vals_tm,
                           size = 0.5, break_thresh = 0.08)
   
-  pdc_nc_apt <- plot_func(plot_obs_nc_apt_ls[[circles_lvl]], plot_grid_nc_apt, color_vals_nc,
-                          size = 0.5, break_thresh = 0.02)
+  pdc_nc_apt <- plot_func(safely_get_index(plot_obs_nc_apt_ls, circles_lvl), 
+                          plot_grid_nc_apt, color_vals_nc, size = 0.5, 
+                          break_thresh = 0.02)
   
-  pdc_ts_apt <- plot_func_tsne(plot_obs_ts_apt_ls[[tsne_lvl]], size=0.25)
+  pdc_ts_apt <- plot_func_tsne(safely_get_index(plot_obs_ts_apt_ls, tsne_lvl), size=0.25)
   
   
-  pdc_tm_nndm <- plot_func(plot_obs_tm_nndm_ls[[two_moons_lvl]], plot_grid_tm_nndm, color_vals_tm,
+  pdc_tm_nndm <- plot_func(safely_get_index(plot_obs_tm_nndm_ls, two_moons_lvl), 
+                           plot_grid_tm_nndm, color_vals_tm,
                           size = 0.5, break_thresh = 0.08)
   
   
-  pdc_nc_nndm <- plot_func(plot_obs_nc_nndm_ls[[circles_lvl]], plot_grid_nc_nndm, color_vals_nc,
+  pdc_nc_nndm <- plot_func(safely_get_index(plot_obs_nc_nndm_ls, circles_lvl), 
+                           plot_grid_nc_nndm, color_vals_nc,
                            size = 0.5, break_thresh = 0.02)
   
-  pdc_ts_nndm <- plot_func_tsne(plot_obs_ts_nndm_ls[[tsne_lvl]], size=0.25)
+  pdc_ts_nndm <- plot_func_tsne(safely_get_index(plot_obs_ts_nndm_ls, tsne_lvl), size=0.25)
 
-  png(sprintf("output/toy_challenge/compare_ballet_clusterings-%d-%d-%d.png", 
-              two_moons_lvl, circles_lvl, tsne_lvl), 
+  png(sprintf("output/toy_challenge/compare_ballet_clusterings-%s.png", file_suffix), 
       width = 12, height = 8, units = 'in', res = 300)
   grid.arrange(
     arrangeGrob(pdc_tm_dpmm, pdc_nc_dpmm, pdc_ts_dpmm, 
@@ -556,9 +653,149 @@ plot_across_density_models <- function(two_moons_lvl=1,
   dev.off()
 }
 
-plot_across_density_models(1,1,1)
-#plot_across_density_models(2,2,1)
-plot_across_density_models(1,1,2)
-#plot_across_density_models(2,2,2)
-plot_across_density_models(1,1,3)
-#plot_across_density_models(2,2,3)
+
+plot_across_density_models(1,1,1, file_suffix="high")
+plot_across_density_models(1,1,2, file_suffix="medium")
+plot_across_density_models(2,2,3, file_suffix="low")
+plot_across_density_models(3,3,4, file_suffix="elbow")
+
+# Show the "elbow" figures for various data-set/models.
+
+elbow_plot <- function(Ef, noise_frac) {
+  d <- data.frame(density=Ef, log.density=log(Ef), ranks=rank(Ef))
+  g <- ggplot(d, aes(x=ranks, y=log.density)) + geom_point(size=0.5) + 
+    geom_vline(xintercept=noise_frac*length(Ef), color='red') +
+    guides(color = 'none') + labs(x=NULL, y=NULL)
+}
+
+find_elbow_noise_frac <- function(plot_obs) {
+  lvls <- str_match(colnames(plot_obs), 'db_pe_(.+)$')[,2]
+  lvls <- lvls[!is.na(lvls)]
+  
+  # Analyze levels to decide on their ordering
+  lvls_num <- as.numeric(lvls)
+  # preset levels are in multiples of 0.05,
+  # while an elbow level will not typically be..
+  elbow_level <- which(floor(lvls_num*1000) %% 50 != 0)
+  
+  if(is.na(elbow_level)) {
+    warning("Could not find elbow level in [", paste(lvls, collapse = ","),"]")
+  } else {
+    elbow_col <- paste0('db_pe_', lvls[elbow_level])
+    attr(plot_obs[[elbow_col]], 'noise_frac')
+  }
+}
+
+
+methods <- c("apt","dpmm", "nndm")
+datasets <- c("two_moons", "circles", "tsne")
+
+gr_obs <- rep(list(rep(list(NULL), length(datasets))), length(methods))
+
+for (method in methods) {
+  for (dataset in datasets) {
+    
+    sprintf("output/toy_challenge/density_pe_%s_%s.rds", method, dataset) |>
+      readRDS() -> Ef
+    
+    sprintf("output/toy_challenge/plot_obs_%s_%s.rds", method, dataset) |>
+      readRDS() |> find_elbow_noise_frac() -> noise_frac
+    
+    gr_obs[[method]][[dataset]] <- elbow_plot(Ef, noise_frac)
+  }
+}
+
+gr_obs$dpmm$two_moons
+
+#See https://cran.r-project.org/web/packages/gridExtra/vignettes/arrangeGrob.html
+
+png("output/toy_challenge/ballet_elbow_plots.png", 
+    width = 12, height = 8, units = 'in', res = 300)
+grid.arrange(
+  arrangeGrob(gr_obs$dpmm$two_moons,
+              top = textGrob(
+                "DP Mixture of Gaussians",
+                gp = gpar(fontface = 3, fontsize = 14)
+              ),
+              left = textGrob("Two Moons", 
+                          gp = gpar(fontface = 3, fontsize = 14), rot=90)),
+  arrangeGrob(gr_obs$apt$two_moons,
+              top = textGrob(
+                "Adaptive Polya Tree",
+                gp = gpar(fontface = 3, fontsize = 14)
+              )),
+  arrangeGrob(gr_obs$nndm$two_moons,
+              top = textGrob(
+                "NN Dirichlet Mixture",
+                gp = gpar(fontface = 3, fontsize = 14)
+              )),
+  arrangeGrob(gr_obs$dpmm$circles,
+              left=textGrob("Noisy Circles", gp = gpar(fontface = 3, fontsize = 14), 
+                            rot=90)),
+  gr_obs$apt$circles,
+  gr_obs$nndm$circles,
+  arrangeGrob(gr_obs$dpmm$tsne, left=textGrob("t-SNE", gp = gpar(fontface = 3, fontsize = 14), 
+                                              rot=90)),
+  gr_obs$apt$tsne, 
+  gr_obs$nndm$tsne, 
+  top = textGrob("Determining cutoff level using elbow plots", 
+                 gp = gpar(fontsize = 18)),
+  right = textGrob(TeX("log(\\hat{f}($x_i$))"), gp = gpar(fontsize = 14), rot=90),
+  bottom = textGrob(TeX("rank of log(\\hat{f}($x_i$)) across $i \\in \\{1, \\ldots, n\\}$"), gp = gpar(fontsize = 14)),
+  nrow = 3,
+  ncol = 3
+)
+dev.off()
+
+
+## Plot the various values for the tSNE dataset and the corresponding 
+## persistent clustering..
+
+plot_tnse_persistent <- function(plot_obs_ls) {
+  plot_obs_ls |>
+    discard_at(length(plot_obs_ls)) |> # remove the last element (the elbow)
+      map("db_pe") |> rev() -> ctree_ls
+
+  do.call(cbind, ctree_ls) -> ctree
+  colnames(ctree) <- paste0("NoiseFrac", map_dbl(ctree_ls, \(x) attr(x,'noise_frac')))
+  # In prep_labels, we replaced 0 to NAs. Change this back. 
+  ctree[is.na(ctree)] <- 0
+  clustree(ctree, prefix="NoiseFrac")
+
+  select_persistent_clusters(ctree, 'NoiseFrac') |>
+    rearrange_labels() -> pc
+  pc <- factor(pc, levels=1:max(pc))
+  attr(pc, 'noise_frac') <- NA #To denote persistent clustering
+
+  #plot_obs_ls |>
+  #  discard_at(length(plot_obs_ls)) |> 
+  #    map(plot_func_tsne) -> gr_obs
+
+  plot_obs_per <- plot_obs_ls[[1]]
+  plot_obs_per$db_pe <- pc
+  g_per <- plot_func_tsne(plot_obs_per)
+  
+  g_per
+}
+
+png(sprintf("output/toy_challenge/tsne-persistent-clustering.png"), 
+    width = 12, height = 8, units = 'in', res = 300)
+grid.arrange(
+  arrangeGrob(plot_tnse_persistent(plot_obs_ts_ls),
+    top = textGrob(
+      "DP Mixture of Gaussians",
+      gp = gpar(fontface = 3, fontsize = 14))
+  ),
+  arrangeGrob(plot_tnse_persistent(plot_obs_ts_apt_ls),
+              top = textGrob(
+                "Adaptive Polya Tree",
+                gp = gpar(fontface = 3, fontsize = 14))
+  ),
+  arrangeGrob(plot_tnse_persistent(plot_obs_ts_nndm_ls),
+              top = textGrob(
+                "NN Dirichlet Mixture",
+                gp = gpar(fontface = 3, fontsize = 14))
+  ),
+  ncol=2
+)
+dev.off()

@@ -1,6 +1,7 @@
 library(dirichletprocess)
 library(salso)
 library(matrixStats)
+library(latex2exp)
 source("R/density_clusterer.R")
 source("R/ne_parts_pair_counting.R")
 source("R/salso_custom.R")
@@ -153,10 +154,10 @@ Ef <- matrixStats::colMedians(fsamps)
 ##
 ## Now let's see what value we obtain using our estimated densities
 rank_and_den <- kneedle(rank(Ef), log(Ef), decreasing = FALSE, concave = TRUE)
-qplot(rank(Ef), log(Ef), xlab="ranks", ylab="sorted log(density)") + 
+qplot(rank(Ef), log(Ef), xlab=TeX("rank of log(\\hat{f}($x_i$)) across $i \\in \\{1, \\ldots, n\\}$"), ylab=TeX("log(\\hat{f}($x_i$))")) + 
   geom_vline(xintercept=rank_and_den[1], col="red")
 ggsave(paste0("output/illustrations/level_selection_elbow.png"), 
-       width = 10, height = 10)
+       width = 5, height = 5)
 cut_quantile <- rank_and_den[1]/length(Ef)  #0.022
 # Thus we declare 2.2% of the observations as noise..
 
